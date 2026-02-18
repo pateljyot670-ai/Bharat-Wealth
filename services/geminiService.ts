@@ -4,7 +4,7 @@ import { SIPInputs, SIPResults, AIInsight } from "../types";
 
 export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResults): Promise<AIInsight | null> => {
   // FIX: Per coding guidelines, API key must be sourced directly from process.env.API_KEY without fallbacks.
-  const ai = new GoogleGenAI({ apiKey: Import.meta.env.VITE_GEMINI_API_KEY });
+  const ai = new GoogleGenAI({ apiKey: import.meta.env.VITE_GEMINI_API_KEY });
   
   const frequencyText = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'One-time Lumpsum';
   
