@@ -9,31 +9,22 @@ interface Props {
 
 const ResultCards: React.FC<Props> = ({ results }) => {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div className="p-5 rounded-2xl shadow-sm border flex flex-col items-center text-center transition-colors dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200/80 hover:shadow-md">
-        <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">Total Invested</p>
-        <p 
-          key={`invested-${results.totalInvested}`} 
-          className="text-2xl font-extrabold dark:text-gray-200 text-gray-800 animate-value-update"
-        >
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="p-8 rounded-3xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Total Invested</p>
+        <p key={`invested-${results.totalInvested}`} className="text-2xl font-black text-slate-900 dark:text-white animate-value-update">
           {formatCurrency(results.totalInvested)}
         </p>
       </div>
-      <div className="p-5 rounded-2xl shadow-sm border flex flex-col items-center text-center transition-colors dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200/80 hover:shadow-md">
-        <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">Est. Returns</p>
-        <p 
-          key={`returns-${results.estimatedReturns}`} 
-          className="text-2xl font-extrabold dark:text-emerald-400 text-emerald-600 animate-value-update"
-        >
+      <div className="p-8 rounded-3xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Estimated Yield</p>
+        <p key={`returns-${results.estimatedReturns}`} className="text-2xl font-black text-emerald-600 dark:text-emerald-500 animate-value-update">
           {formatCurrency(results.estimatedReturns)}
         </p>
       </div>
-      <div className="p-5 rounded-2xl shadow-sm border flex flex-col items-center text-center transition-colors dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200/80 hover:shadow-md">
-        <p className="text-xs uppercase tracking-wider text-gray-500 dark:text-gray-400 font-semibold mb-1">Total Value</p>
-        <p 
-          key={`total-${results.totalValue}`} 
-          className="text-2xl font-extrabold dark:text-indigo-400 text-indigo-600 animate-value-update"
-        >
+      <div className="p-8 rounded-3xl border bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-all group">
+        <p className="text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 mb-2">Terminal Value</p>
+        <p key={`total-${results.totalValue}`} className="text-2xl font-black text-indigo-600 dark:text-indigo-400 animate-value-update">
           {formatCurrency(results.totalValue)}
         </p>
       </div>

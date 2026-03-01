@@ -1,3 +1,4 @@
+
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { SIPInputs, SIPResults, AIInsight } from './types';
 import { calculateWealth, formatCurrency } from './utils/sipCalculations';
@@ -20,6 +21,8 @@ const DEFAULT_INPUTS: SIPInputs = {
 
 const App: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null);
+  const pdfTemplateRef = useRef<HTMLDivElement>(null);
+  
   const [darkMode, setDarkMode] = useState(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('theme') === 'dark';
@@ -28,9 +31,7 @@ const App: React.FC = () => {
   });
 
   const [inputs, setInputs] = useState<SIPInputs>(DEFAULT_INPUTS);
-
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
-  const [aiError, setAiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -50,17 +51,11 @@ const App: React.FC = () => {
 
   const handleGetInsights = async () => {
     setIsGenerating(true);
-    setAiInsight(null);
-    setAiError(null);
     try {
       const insight = await getFinancialInsights(inputs, results);
-      if (insight) {
-        setAiInsight(insight);
-      } else {
-        setAiError("Unable to connect to AI advisor. Please try again.");
-      }
+      if (insight) setAiInsight(insight);
     } catch (error) {
-      setAiError("Unable to connect to AI advisor. Please try again.");
+      console.error(error);
     } finally {
       setIsGenerating(false);
     }
@@ -69,101 +64,67 @@ const App: React.FC = () => {
   const handleReset = () => {
     setInputs(DEFAULT_INPUTS);
     setAiInsight(null);
-    setAiError(null);
   };
 
   const handleDownloadPdf = async () => {
-    if (!reportRef.current || isCapturing) return;
+    if (!pdfTemplateRef.current || isCapturing) return;
     setIsCapturing(true);
     
-    // Use a short timeout to allow the UI to update to the 'capturing' state
-    setTimeout(async () => {
-      try {
-        const canvas = await html2canvas(reportRef.current!, {
-          scale: 2, 
-          logging: false,
-          useCORS: true,
-          allowTaint: true,
-          backgroundColor: darkMode ? '#0f172a' : '#f8fafc',
-          onclone: (clonedDoc) => {
-            const clonedContainer = clonedDoc.getElementById('professional-report-container');
-            const clonedProHeader = clonedDoc.getElementById('report-header-professional');
-            const isDark = document.documentElement.classList.contains('dark');
+    await new Promise(r => setTimeout(r, 100));
 
-            // High contrast grid patterns
-            const gridSvgLight = `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%236366f1' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
-            const gridSvgDark = `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23818cf8' fill-opacity='0.05'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`;
-            
-            if (clonedContainer) {
-              clonedContainer.style.padding = '48px';
-              clonedContainer.style.borderRadius = '0px';
-              clonedContainer.style.backgroundColor = isDark ? '#0f172a' : '#f8fafc';
-              clonedContainer.style.backgroundImage = isDark ? gridSvgDark : gridSvgLight;
-              
-              if (clonedProHeader) {
-                clonedProHeader.style.display = 'flex';
-                clonedProHeader.style.marginBottom = '40px';
-              }
-
-              const screenshotHides = clonedDoc.querySelectorAll('.screenshot-hide');
-              screenshotHides.forEach(el => (el as HTMLElement).style.display = 'none');
-            }
-          }
-        });
-        
-        const image = canvas.toDataURL("image/png", 1.0);
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = pdf.internal.pageSize.getHeight();
-        const canvasWidth = canvas.width;
-        const canvasHeight = canvas.height;
-        const ratio = canvasWidth / canvasHeight;
-
-        let imgWidth = pdfWidth - 10; // slim margins for pro feel
-        let imgHeight = imgWidth / ratio;
-        
-        if (imgHeight > pdfHeight - 20) {
-            imgHeight = pdfHeight - 20;
-            imgWidth = imgHeight * ratio;
+    try {
+      const canvas = await html2canvas(pdfTemplateRef.current, {
+        scale: 2, // Optimized for balanced quality and size
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        onclone: (clonedDoc) => {
+          const el = clonedDoc.getElementById('pdf-report-hidden-template');
+          if (el) el.style.display = 'block';
         }
+      });
+      
+      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const pdf = new jsPDF({
+        orientation: 'portrait',
+        unit: 'mm',
+        format: 'a4',
+        compress: true 
+      });
 
-        const x = (pdfWidth - imgWidth) / 2;
-        const y = 10;
-        
-        pdf.addImage(image, 'PNG', x, y, imgWidth, imgHeight);
-        
-        const fileName = `BharatWealth_${inputs.mode}_Analysis_${new Date().toISOString().split('T')[0]}.pdf`;
-        pdf.save(fileName);
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
 
-      } catch (err) {
-        console.error("PDF report capture failed:", err);
-      } finally {
-        setIsCapturing(false);
-      }
-    }, 150);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
+      pdf.save(`BharatWealth_Report_${new Date().getTime()}.pdf`);
+    } catch (err) {
+      console.error("PDF Generation Error:", err);
+    } finally {
+      setIsCapturing(false);
+    }
   };
 
   const shareText = useMemo(() => {
-    const { investmentAmount, frequency, periodYears, mode } = inputs;
-    const { totalValue } = results;
+    return `Just projected my wealth growth with Bharat Wealth! Plan your financial future too. #BharatWealth #SIP`;
+  }, []);
 
-    const amountStr = formatCurrency(investmentAmount);
-    const totalValStr = formatCurrency(totalValue);
-    const freqStr = mode === 'SIP' ? frequency.toLowerCase() : 'one-time';
-
-    return `Just projected my wealth growth with Bharat Wealth! Investing ${amountStr} ${freqStr} for ${periodYears} years could grow to ${totalValStr}. Plan your financial future too! #BharatWealth #Investment #SIP #FinancialPlanning`;
-  }, [inputs, results]);
+  const milestones = useMemo(() => {
+    const data = results.yearlyData;
+    if (data.length <= 5) return data;
+    const step = Math.floor(data.length / 5);
+    const filtered = data.filter((_, i) => i % step === 0 || i === data.length - 1);
+    return Array.from(new Set(filtered.map(d => d.year))).map(y => data.find(d => d.year === y)!);
+  }, [results.yearlyData]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-gray-100' : 'bg-gray-50 text-gray-900'} pb-24`}>
+    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-gray-50 text-slate-900'} pb-24`}>
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl="https://bharatwealth.app" />}
       
-      {/* Header */}
-      <header className={`border-b transition-all duration-300 sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/80 border-slate-800' : 'bg-white/80 border-gray-200'} backdrop-blur-xl screenshot-hide`}>
+      {/* APP HEADER */}
+      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/90 border-gray-200'} backdrop-blur-xl screenshot-hide`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4 group cursor-pointer">
+          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
             <div className="relative w-10 h-10 transform transition-transform group-hover:rotate-12">
               <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
                 <defs>
@@ -172,274 +133,273 @@ const App: React.FC = () => {
                     <stop offset="100%" stopColor="#ea580c" />
                   </linearGradient>
                 </defs>
-                <path 
-                  d="M20 20 C20 20 50 10 80 20 L80 50 C80 75 50 90 50 90 C50 90 20 75 20 50 Z" 
-                  fill="none" 
-                  stroke="url(#logoGradient)" 
-                  strokeWidth="8" 
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <path 
-                  d="M35 60 L50 75 L90 25 M90 25 L75 25 M90 25 L90 40" 
-                  fill="none" 
-                  stroke="url(#logoGradient)" 
-                  strokeWidth="10" 
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
+                <path d="M20 20 C20 20 50 10 80 20 L80 50 C80 75 50 90 50 90 C50 90 20 75 20 50 Z" fill="none" stroke="url(#logoGradient)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                <path d="M35 60 L50 75 L90 25 M90 25 L75 25 M90 25 L90 40" fill="none" stroke="url(#logoGradient)" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
             <h1 className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-indigo-500 to-indigo-600">
               Bharat Wealth
             </h1>
           </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowGuide(true)}
-              className={`p-2.5 rounded-xl transition-all ${darkMode ? 'bg-slate-800 text-slate-300' : 'bg-gray-100 text-gray-500'} hover:scale-110 active:scale-95 border border-transparent dark:hover:border-slate-700`}
-              aria-label="Show user guide"
+          <div className="flex items-center gap-2">
+            <button 
+              onClick={() => setShowGuide(true)} 
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-90"
+              title="How it works"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
               </svg>
             </button>
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              className={`p-2.5 rounded-xl transition-all ${darkMode ? 'bg-slate-800 text-amber-400' : 'bg-gray-100 text-gray-500'} hover:scale-110 active:scale-95 border border-transparent dark:hover:border-slate-700`}
-              aria-label="Toggle Dark Mode"
-            >
-              {darkMode ? (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 9h-1m15.364-6.364l-.707.707M6.343 17.657l-.707.707M16.95 16.95l.707.707M7.05 7.05l.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                </svg>
-              ) : (
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                </svg>
-              )}
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 transition-transform active:scale-90">
+              {darkMode ? '☀️' : '🌙'}
             </button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-10">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+      {/* DASHBOARD UI */}
+      <main className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
+        <aside className="lg:col-span-4 space-y-8 screenshot-hide">
+          <InputSection inputs={inputs} setInputs={setInputs} onReset={handleReset} />
           
-          {/* Left Column: Inputs */}
-          <div className="lg:col-span-4 space-y-8 screenshot-hide">
-            <InputSection inputs={inputs} setInputs={setInputs} onReset={handleReset} />
-            
-            <div className="p-8 rounded-3xl shadow-2xl space-y-5 transition-transform hover:scale-[1.02] bg-gradient-to-br from-indigo-700 via-indigo-800 to-slate-900 text-white border border-white/10">
-              <h3 className="text-xl font-bold flex items-center gap-2 text-white">
-                <span className="animate-pulse">✨</span> AI Strategist
-              </h3>
-              <p className="text-sm leading-relaxed text-indigo-100/90 font-medium">
-                Get a high-conviction analysis from Gemini AI based on your {inputs.frequency.toLowerCase()} commitment of {formatCurrency(inputs.investmentAmount)}.
-              </p>
-              <button
-                onClick={handleGetInsights}
-                disabled={isGenerating}
-                className="w-full py-4 px-6 font-black uppercase tracking-wider text-xs rounded-2xl transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-xl bg-white text-indigo-900 hover:bg-indigo-50 active:scale-95"
-              >
-                {isGenerating ? (
-                  <>
-                    <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Processing...
-                  </>
-                ) : (
-                  `Generate Intelligence`
-                )}
-              </button>
-            </div>
+          {/* AI Strategy Advisor Box (Dark Blue Scheme) 🔵 */}
+          <div className="p-8 rounded-3xl bg-blue-900 text-white space-y-4 shadow-xl border border-blue-800">
+             <h3 className="text-xl font-bold flex items-center gap-2">
+                <span className="text-blue-400">⚡</span> AI Strategy Advisor
+             </h3>
+             <p className="text-sm opacity-90 font-medium text-blue-100">Get a professional risk-reward analysis based on your current inputs.</p>
+             <div className="pt-2">
+               <button 
+                 onClick={handleGetInsights} 
+                 disabled={isGenerating}
+                 className="w-full py-4 bg-white text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95 shadow-lg"
+               >
+                  {isGenerating ? 'Analyzing...' : 'Analyze Plan'}
+               </button>
+             </div>
           </div>
+        </aside>
 
-          {/* Right Column: Results & Analysis */}
-          <div 
-            className="lg:col-span-8 space-y-10 rounded-3xl" 
-            ref={reportRef}
-            id="professional-report-container"
-          >
-            {/* Professional Report Header (Visible only on captured PDF) */}
-            <div id="report-header-professional" style={{ display: 'none' }} className="flex-col gap-8 pb-10 border-b-2 border-slate-200 dark:border-slate-700">
-              <div className="flex justify-between items-start">
-                <div>
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12">
-                      <svg viewBox="0 0 100 100" className="w-full h-full">
-                        <path d="M20 20 C20 20 50 10 80 20 L80 50 C80 75 50 90 50 90 C50 90 20 75 20 50 Z" fill="none" stroke="#ea580c" strokeWidth="8" />
-                        <path d="M35 60 L50 75 L90 25" fill="none" stroke="#ea580c" strokeWidth="10" />
-                      </svg>
-                    </div>
-                    <h1 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Bharat Wealth</h1>
-                  </div>
-                  <h2 className="text-4xl font-extrabold text-indigo-600 dark:text-indigo-400 tracking-tight">Investment Projection Report</h2>
-                  <p className="text-sm text-slate-500 font-bold uppercase tracking-widest mt-2">Analysis Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
-                </div>
-                <div className="text-right">
-                  <span className="inline-block px-5 py-2 rounded-2xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-black uppercase tracking-widest border border-indigo-100 dark:border-indigo-800/50">
-                    {inputs.mode} STRATEGY
-                  </span>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-3 gap-6 bg-white/40 dark:bg-slate-800/40 p-6 rounded-3xl border border-slate-200/50 dark:border-slate-700/50 mt-6 shadow-sm">
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Committed Capital</p>
-                  <p className="text-2xl font-black text-slate-900 dark:text-white">₹{inputs.investmentAmount.toLocaleString('en-IN')} <span className="text-xs font-bold text-slate-500">/{inputs.mode === 'SIP' ? inputs.frequency : 'Once'}</span></p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Target Yield</p>
-                  <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400">{inputs.expectedReturn}% <span className="text-xs font-bold text-slate-500">p.a.</span></p>
-                </div>
-                <div>
-                  <p className="text-[10px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-2">Growth Horizon</p>
-                  <p className="text-2xl font-black text-amber-600 dark:text-amber-400">{inputs.periodYears} <span className="text-xs font-bold text-slate-500">Years</span></p>
-                </div>
-              </div>
-            </div>
-
-            {/* Dashboard Controls (Visible only on web) */}
-            <div className={`flex justify-between items-center mb-[-1rem] screenshot-hide`}>
-              <h2 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest px-2">Growth Analytics</h2>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setShowShareModal(true)}
-                  className={`p-3 rounded-2xl transition-all flex items-center justify-center ${darkMode ? 'bg-slate-800 text-slate-400 hover:text-indigo-400' : 'bg-white text-gray-500 hover:text-indigo-600 shadow-sm border border-gray-200'} hover:scale-105 active:scale-95`}
-                  title="Share Projection"
+        <section className="lg:col-span-8 space-y-10" ref={reportRef}>
+           <div className="flex justify-between items-center mb-[-2.5rem] screenshot-hide">
+              <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Projection Dashboard</h2>
+              <div className="flex items-center gap-2">
+                <button 
+                  onClick={() => setShowShareModal(true)} 
+                  className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-105 active:scale-90 transition-all group"
+                  title="Share Plan"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 group-hover:text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
                   </svg>
                 </button>
+                
                 <button 
-                  onClick={handleDownloadPdf}
+                  onClick={handleDownloadPdf} 
                   disabled={isCapturing}
-                  className={`p-3 rounded-2xl transition-all min-w-[140px] flex items-center justify-center ${darkMode ? 'bg-slate-800 text-indigo-400 hover:bg-indigo-700 hover:text-white border-transparent' : 'bg-white text-indigo-600 hover:bg-indigo-600 hover:text-white shadow-sm border border-gray-200'} ${isCapturing ? 'opacity-80 cursor-wait' : 'hover:scale-105 active:scale-95 font-bold'}`}
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-lg disabled:opacity-50"
                 >
-                  {isCapturing ? (
-                    <div className="flex items-center gap-2">
-                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  {isCapturing ? 'Generating...' : (
+                    <>
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
                       </svg>
-                      <span className="text-[10px] uppercase tracking-widest">Generating</span>
-                    </div>
-                  ) : (
-                    <div className="flex items-center gap-2">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                      </svg>
-                      <span className="text-[10px] uppercase tracking-widest">Premium PDF</span>
-                    </div>
+                      PDF
+                    </>
                   )}
                 </button>
               </div>
-            </div>
-
-            <ResultCards results={results} />
-            
-            <ChartsSection results={results} />
-
-            {/* AI Insights Display */}
-            {(aiInsight || isGenerating || aiError) && (
-              <div className={`p-10 rounded-3xl shadow-xl border transition-all duration-500 ${darkMode ? 'bg-slate-800/80 border-slate-700/50' : 'bg-white border-slate-200'}`}>
-                <div className="flex items-center gap-4 mb-8">
-                  <div className="p-3 rounded-2xl bg-indigo-500 text-white shadow-lg shadow-indigo-500/20">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                    </svg>
-                  </div>
-                  <h3 className={`text-2xl font-black tracking-tight ${darkMode ? 'text-white' : 'text-slate-900'}`}>Strategy Intelligence</h3>
+           </div>
+           <ResultCards results={results} />
+           <ChartsSection results={results} />
+           
+           {aiInsight && (
+             <div className={`p-10 rounded-[2.5rem] border shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
+                  <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
+                  AI Strategic Insight
+                </h3>
+                <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-400 mb-8">{aiInsight.analysis}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                   <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800">
+                      <h4 className="text-[10px] font-black uppercase text-emerald-600 mb-2">Pro Strategy</h4>
+                      <p className="text-sm font-bold text-slate-800 dark:text-emerald-100">{aiInsight.proTip}</p>
+                   </div>
+                   <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800">
+                      <h4 className="text-[10px] font-black uppercase text-amber-600 mb-2">Key Risk</h4>
+                      <p className="text-sm font-bold text-slate-800 dark:text-amber-100">{aiInsight.warning}</p>
+                   </div>
                 </div>
-                {isGenerating ? (
-                  <div className="space-y-6">
-                    <div className={`h-4 rounded-full w-3/4 animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-gray-100'}`}></div>
-                    <div className={`h-4 rounded-full w-full animate-pulse ${darkMode ? 'bg-slate-700' : 'bg-gray-100'}`}></div>
-                    <div className="pt-4 grid grid-cols-2 gap-4">
-                        <div className={`h-24 rounded-2xl animate-pulse ${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'}`}></div>
-                        <div className={`h-24 rounded-2xl animate-pulse ${darkMode ? 'bg-slate-700/50' : 'bg-gray-50'}`}></div>
-                    </div>
-                  </div>
-                ) : aiError ? (
-                  <div className="text-center py-6 bg-red-50 dark:bg-red-900/20 rounded-2xl">
-                    <p className="text-red-600 dark:text-red-400 font-bold">{aiError}</p>
-                  </div>
-                ) : aiInsight ? (
-                  <div className="space-y-8">
-                    <p className={`text-base leading-relaxed font-medium ${darkMode ? 'text-slate-300' : 'text-slate-600'}`}>{aiInsight.analysis}</p>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="p-6 rounded-3xl border bg-emerald-50/50 border-emerald-100 dark:bg-emerald-900/10 dark:border-emerald-800/40 transform transition-all hover:scale-[1.03]">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="p-2 rounded-xl bg-emerald-100 dark:bg-emerald-900/40 text-emerald-600 dark:text-emerald-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-emerald-800 dark:text-emerald-400">Tactical Advantage</h4>
-                        </div>
-                        <p className="text-sm font-bold text-emerald-900/80 dark:text-emerald-300/90 leading-relaxed">{aiInsight.proTip}</p>
-                      </div>
-                      
-                      <div className="p-6 rounded-3xl border bg-amber-50/50 border-amber-100 dark:bg-amber-900/10 dark:border-amber-800/40 transform transition-all hover:scale-[1.03]">
-                        <div className="flex items-center gap-3 mb-3">
-                          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-900/40 text-amber-600 dark:text-amber-400">
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 3.001-1.742 3.001H4.42c-1.53 0-2.493-1.667-1.743-3.001l5.58-9.92zM10 13a1 1 0 110-2 1 1 0 010 2zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                            </svg>
-                          </div>
-                          <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-amber-800 dark:text-amber-400">Risk Assessment</h4>
-                        </div>
-                        <p className="text-sm font-bold text-amber-900/80 dark:text-amber-300/90 leading-relaxed">{aiInsight.warning}</p>
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </div>
-            )}
+             </div>
+           )}
+        </section>
+      </main>
 
-            {/* Verdict Card */}
-            <div className={`p-10 rounded-[2.5rem] border shadow-2xl transition-all ${darkMode ? 'bg-slate-800 border-slate-700 shadow-slate-900/20' : 'bg-white border-slate-200 shadow-slate-100'}`}>
-              <div className="flex flex-col md:flex-row gap-8 items-center">
-                <div className={`flex p-6 rounded-3xl transition-colors ${darkMode ? 'bg-indigo-900/40 text-indigo-400' : 'bg-indigo-50 text-indigo-600'}`}>
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-12 w-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+      {/* Footer Disclaimer */}
+      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200 dark:border-slate-800 screenshot-hide">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+          <div className="space-y-4">
+            <div className="flex items-center gap-2 opacity-50">
+              <div className="w-6 h-6">
+                <svg viewBox="0 0 100 100" className="w-full h-full">
+                  <path d="M20 20 C20 20 50 10 80 20 L80 50 C80 75 50 90 50 90 C50 90 20 75 20 50 Z" fill="none" stroke="currentColor" strokeWidth="8" />
+                </svg>
+              </div>
+              <span className="text-sm font-bold tracking-tighter uppercase">Bharat Wealth</span>
+            </div>
+            <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 max-w-md">
+              © {new Date().getFullYear()} Bharat Wealth. All rights reserved. 
+              Developed with precision for the Indian investment landscape.
+            </p>
+          </div>
+          <div className="bg-gray-100/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-200 dark:border-slate-800">
+            <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Professional Disclaimer</h4>
+            <p className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+              The projections and insights generated by Bharat Wealth are based on standardized mathematical growth formulas and are intended for illustrative and educational purposes only. 
+              <span className="font-bold text-slate-700 dark:text-slate-300"> Mutual fund investments and securities market participations are subject to market risks; read all scheme related documents carefully before investing.</span> 
+              Past performance is not a reliable indicator of future results. Bharat Wealth is a simulation tool and does not provide regulated financial, tax, or legal advice. 
+              Users are strongly encouraged to consult with a SEBI-registered investment advisor before making any financial commitments.
+            </p>
+          </div>
+        </div>
+      </footer>
+
+      {/* HIDDEN PREMIUM A4 REPORT TEMPLATE */}
+      <div 
+        ref={pdfTemplateRef}
+        id="pdf-report-hidden-template"
+        className="hidden" 
+        style={{ 
+          width: '800px', 
+          backgroundColor: '#ffffff', 
+          color: '#0f172a',
+          padding: '60px',
+          fontFamily: "'Inter', sans-serif"
+        }}
+      >
+        <div className="border-b-8 border-indigo-900 pb-12 mb-12 relative overflow-hidden">
+          <div className="absolute top-0 right-0 opacity-5 -mr-20 -mt-20">
+             <div className="w-96 h-96 border-[40px] border-indigo-900 rounded-full"></div>
+          </div>
+          <div className="flex justify-between items-start relative z-10">
+            <div>
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 relative">
+                  <svg viewBox="0 0 100 100" className="w-full h-full">
+                    <defs>
+                      <linearGradient id="pdfLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" stopColor="#f59e0b" />
+                        <stop offset="100%" stopColor="#ea580c" />
+                      </linearGradient>
+                    </defs>
+                    <path d="M20 20 C20 20 50 10 80 20 L80 50 C80 75 50 90 50 90 C50 90 20 75 20 50 Z" fill="none" stroke="url(#pdfLogoGradient)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+                    <path d="M35 60 L50 75 L90 25 M90 25 L75 25 M90 25 L90 40" fill="none" stroke="url(#pdfLogoGradient)" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
                   </svg>
                 </div>
-                <div className="flex-1 text-center md:text-left">
-                  <h4 className={`font-black mb-3 uppercase tracking-[0.25em] text-[10px] ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>Strategic Wealth Verdict</h4>
-                  <p className={`text-xl leading-relaxed ${darkMode ? 'text-slate-200' : 'text-slate-700'}`}>
-                    Deploying <span className="font-black text-indigo-500">₹{inputs.investmentAmount.toLocaleString('en-IN')}</span> {inputs.mode === 'SIP' ? inputs.frequency.toLowerCase() : 'lumpsum'} over <span className="font-black">{inputs.periodYears} years</span>, 
-                    yields a high-impact terminal value of <span className="font-black text-3xl block md:inline text-indigo-600 dark:text-indigo-400">₹{results.totalValue.toLocaleString('en-IN')}</span>. 
-                    Estimated capital appreciation totals <span className="font-black text-emerald-500">₹{results.estimatedReturns.toLocaleString('en-IN')}</span>.
-                  </p>
+                <div>
+                   <h2 className="text-3xl font-black tracking-tighter uppercase text-indigo-950">Bharat Wealth</h2>
                 </div>
               </div>
+              <h1 className="text-5xl font-extrabold text-slate-900">Portfolio Growth <br/><span className="text-indigo-600">Projections</span></h1>
             </div>
-
-            <div className={`pt-10 border-t-2 ${darkMode ? 'border-slate-800' : 'border-slate-100'}`}>
-              <p className="text-[9px] text-slate-400 dark:text-slate-500 text-center font-bold uppercase tracking-[0.2em] leading-relaxed italic max-w-2xl mx-auto">
-                Regulatory Notice: Performance metrics are based on compound interest algorithms. Actual results depend on market volatility and underlying asset performance. Mutual funds are subject to market risks.
-              </p>
+            <div className="text-right">
+               <div className="bg-slate-100 px-4 py-2 rounded-lg inline-block mb-4">
+                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Document No.</p>
+                  <p className="font-mono text-sm font-bold text-slate-800 uppercase">BW-{new Date().getFullYear()}-{Math.floor(Math.random()*10000)}</p>
+               </div>
+               <p className="text-sm font-medium text-slate-500">Issue Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+               <p className="text-xs text-indigo-500 font-black mt-2 uppercase tracking-widest">Confidential Report</p>
             </div>
           </div>
         </div>
-      </main>
 
-      <footer className="max-w-7xl mx-auto px-6 mt-16 text-center text-slate-400 dark:text-slate-600 text-[10px] font-black uppercase tracking-[0.3em] pb-12 screenshot-hide">
-        <div className="flex justify-center gap-2 mb-4">
-            <span className="w-1.5 h-1.5 rounded-full bg-orange-500"></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+        <div className="mb-12">
+          <div className="flex items-center gap-4 mb-6">
+             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">I. Executive Summary</h3>
+             <div className="flex-1 h-px bg-slate-100"></div>
+          </div>
+          <div className="grid grid-cols-4 gap-6">
+            {[
+              { label: 'Investment Mode', value: `${inputs.mode} (${inputs.frequency})`, color: 'text-indigo-600' },
+              { label: 'Principal Commitment', value: formatCurrency(inputs.investmentAmount), color: 'text-slate-900' },
+              { label: 'Expected CAGR', value: `${inputs.expectedReturn}%`, color: 'text-emerald-600' },
+              { label: 'Strategic Horizon', value: `${inputs.periodYears} Years`, color: 'text-amber-600' }
+            ].map((item, i) => (
+              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
+                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              </div>
+            ))}
+          </div>
         </div>
-        <p className="mb-2">Forged with precision in India</p>
-        <p>© {new Date().getFullYear()} Bharat Wealth Strategic. All rights reserved.</p>
-      </footer>
+
+        <div className="mb-12 grid grid-cols-12 gap-8 items-center">
+           <div className="col-span-7">
+             <div className="flex items-center gap-4 mb-6">
+                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">II. Wealth Forecast</h3>
+                <div className="flex-1 h-px bg-slate-100"></div>
+             </div>
+             <div className="space-y-4">
+                <div className="flex justify-between items-center p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
+                   <p className="font-bold text-slate-600">Projected Total Invested</p>
+                   <p className="text-2xl font-black text-slate-900">{formatCurrency(results.totalInvested)}</p>
+                </div>
+                <div className="flex justify-between items-center p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
+                   <p className="font-bold text-slate-600">Estimated Portfolio Yield</p>
+                   <p className="text-2xl font-black text-emerald-700">{formatCurrency(results.estimatedReturns)}</p>
+                </div>
+                <div className="flex justify-between items-center p-8 bg-indigo-900 rounded-[2rem] shadow-xl text-white">
+                   <div>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Terminal Portfolio Value</p>
+                      <p className="text-3xl font-black">{formatCurrency(results.totalValue)}</p>
+                   </div>
+                   <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" /></svg>
+                   </div>
+                </div>
+             </div>
+           </div>
+           
+           <div className="col-span-5 bg-slate-50 p-8 rounded-3xl border border-slate-100 h-full flex flex-col justify-center">
+              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 text-center">Growth Milestones</h4>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-slate-400 border-b border-slate-200">
+                    <th className="pb-3 font-bold uppercase text-[9px]">Year</th>
+                    <th className="pb-3 font-bold uppercase text-[9px] text-right">Principal</th>
+                    <th className="pb-3 font-bold uppercase text-[9px] text-right">Total Wealth</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100">
+                  {milestones.map((m, idx) => (
+                    <tr key={idx} className="group">
+                      <td className="py-3 font-black text-indigo-600">{m.year}</td>
+                      <td className="py-3 text-right text-slate-500 font-medium">₹{m.invested.toLocaleString('en-IN')}</td>
+                      <td className="py-3 text-right font-bold text-slate-900">₹{m.totalValue.toLocaleString('en-IN')}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+           </div>
+        </div>
+
+        <div className="mt-auto pt-12 border-t border-slate-100 flex justify-between items-end opacity-40">
+           <div className="max-w-md">
+              <p className="text-[8px] font-bold uppercase tracking-widest leading-relaxed">
+                Legal Disclaimer: This projection is generated using mathematical estimates. Past performance is not indicative of future returns. Bharat Wealth acts as a strategic simulation tool and does not provide regulated financial advice. Portfolio results are subject to market volatility.
+              </p>
+           </div>
+           <div className="text-right flex flex-col items-end">
+              <div className="mb-2">
+                 <p className="text-[8px] font-black uppercase tracking-widest mb-1">Authenticated By</p>
+                 <div className="w-24 h-8 bg-slate-100 rounded flex items-center justify-center border-2 border-slate-200">
+                    <span className="text-[9px] font-black italic text-slate-400">SYSTEM VERIFIED</span>
+                 </div>
+              </div>
+           </div>
+        </div>
+      </div>
     </div>
   );
 };
