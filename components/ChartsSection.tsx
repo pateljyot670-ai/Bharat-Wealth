@@ -68,8 +68,8 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Wealth Distribution (Pie) */}
-        <div className="p-6 rounded-2xl shadow-sm border transition-all hover:shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200/80">
-          <h3 className="text-lg font-bold dark:text-gray-100 text-gray-800 mb-4 flex items-center gap-2">
+        <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
+          <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 mb-4 flex items-center gap-2">
             <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
             Wealth Composition
           </h3>
@@ -105,9 +105,9 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
         </div>
 
         {/* Growth Projection (Area) */}
-        <div className="p-6 rounded-2xl shadow-sm border transition-all hover:shadow-lg dark:bg-gray-800 dark:border-gray-700 bg-white border-gray-200/80">
+        <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h3 className="text-lg font-bold dark:text-gray-100 text-gray-800 flex items-center gap-2">
+            <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 flex items-center gap-2">
               <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
               Growth Projection
             </h3>
@@ -116,7 +116,7 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
               onClick={() => setShowInvestedLine(!showInvestedLine)}
               className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                 showInvestedLine 
-                  ? 'dark:bg-gray-700 dark:text-gray-400 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600' 
+                  ? 'dark:bg-slate-800 dark:text-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700' 
                   : 'dark:bg-indigo-900/30 dark:text-indigo-400 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
               }`}
             >

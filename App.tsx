@@ -8,6 +8,7 @@ import ResultCards from './components/ResultCards';
 import ChartsSection from './components/ChartsSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import ShareModal from './components/ShareModal';
+import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -73,14 +74,21 @@ const App: React.FC = () => {
     await new Promise(r => setTimeout(r, 100));
 
     try {
+      // html2canvas has issues with modern oklch colors used by Tailwind v4.
+      // We override these to standard hex/rgb in index.css for the PDF template.
       const canvas = await html2canvas(pdfTemplateRef.current, {
-        scale: 2, // Optimized for balanced quality and size
+        scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
         onclone: (clonedDoc) => {
           const el = clonedDoc.getElementById('pdf-report-hidden-template');
-          if (el) el.style.display = 'block';
+          if (el) {
+            el.style.display = 'block';
+            // Ensure no oklch colors leak in from computed styles if possible
+            el.style.color = '#0f172a';
+            el.style.backgroundColor = '#ffffff';
+          }
         }
       });
       
@@ -117,12 +125,12 @@ const App: React.FC = () => {
   }, [results.yearlyData]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-gray-50 text-slate-900'} pb-24`}>
+    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 text-slate-900'} pb-24`}>
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl="https://bharatwealth.app" />}
       
       {/* APP HEADER */}
-      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/90 border-gray-200'} backdrop-blur-xl screenshot-hide`}>
+      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/80 border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
             <div className="relative w-10 h-10 transform transition-transform group-hover:rotate-12">
@@ -144,15 +152,13 @@ const App: React.FC = () => {
           <div className="flex items-center gap-2">
             <button 
               onClick={() => setShowGuide(true)} 
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-gray-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-all active:scale-90"
+              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all active:scale-90"
               title="How it works"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
+              <Info className="h-5 w-5" />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-gray-100 dark:bg-slate-800 transition-transform active:scale-90">
-              {darkMode ? '☀️' : '🌙'}
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90">
+              {darkMode ? <Sun className="h-5 w-5 text-amber-500" /> : <Moon className="h-5 w-5 text-slate-600" />}
             </button>
           </div>
         </div>
@@ -181,31 +187,35 @@ const App: React.FC = () => {
           </div>
         </aside>
 
-        <section className="lg:col-span-8 space-y-10" ref={reportRef}>
-           <div className="flex justify-between items-center mb-[-2.5rem] screenshot-hide">
-              <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Projection Dashboard</h2>
-              <div className="flex items-center gap-2">
+        <section className="lg:col-span-8 space-y-8" ref={reportRef}>
+           <div className="flex justify-between items-end screenshot-hide relative z-10">
+              <div className="space-y-1">
+                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Projection Dashboard</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Growth analysis & wealth forecast</p>
+              </div>
+              <div className="flex items-center gap-3">
                 <button 
                   onClick={() => setShowShareModal(true)} 
-                  className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:scale-105 active:scale-90 transition-all group"
+                  className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group flex items-center justify-center"
                   title="Share Plan"
                 >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-indigo-600 group-hover:text-indigo-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12s-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.368a3 3 0 105.367 2.684 3 3 0 00-5.367-2.684z" />
-                  </svg>
+                  <Share2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300" strokeWidth={2.5} />
                 </button>
                 
                 <button 
                   onClick={handleDownloadPdf} 
                   disabled={isCapturing}
-                  className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 text-white font-black text-[10px] uppercase tracking-widest hover:bg-indigo-700 active:scale-95 transition-all shadow-lg disabled:opacity-50"
+                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 hover:shadow-indigo-500/20 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
                 >
-                  {isCapturing ? 'Generating...' : (
+                  {isCapturing ? (
+                    <span className="flex items-center gap-2">
+                      <RefreshCw className="animate-spin h-5 w-5 text-white" strokeWidth={2.5} />
+                      Processing
+                    </span>
+                  ) : (
                     <>
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                        <path fillRule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V7.414A2 2 0 0015.414 6L12 2.586A2 2 0 0010.586 2H6zm5 6a1 1 0 10-2 0v3.586l-1.293-1.293a1 1 0 10-1.414 1.414l3 3a1 1 0 001.414 0l3-3a1 1 0 00-1.414-1.414L11 11.586V8z" clipRule="evenodd" />
-                      </svg>
-                      PDF
+                      <FileDown className="h-5 w-5 text-white" strokeWidth={2.5} />
+                      Download PDF
                     </>
                   )}
                 </button>
@@ -354,8 +364,8 @@ const App: React.FC = () => {
                       <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Terminal Portfolio Value</p>
                       <p className="text-3xl font-black">{formatCurrency(results.totalValue)}</p>
                    </div>
-                   <div className="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center">
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" viewBox="0 0 20 20" fill="currentColor"><path fillRule="evenodd" d="M12 7a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0V8.414l-4.293 4.293a1 1 0 01-1.414 0L8 10.414l-4.293 4.293a1 1 0 01-1.414-1.414l5-5a1 1 0 011.414 0L11 10.586 14.586 7H12z" clipRule="evenodd" /></svg>
+                   <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+                       <TrendingUp className="h-8 w-8" strokeWidth={3} />
                    </div>
                 </div>
              </div>
@@ -393,8 +403,9 @@ const App: React.FC = () => {
            <div className="text-right flex flex-col items-end">
               <div className="mb-2">
                  <p className="text-[8px] font-black uppercase tracking-widest mb-1">Authenticated By</p>
-                 <div className="w-24 h-8 bg-slate-100 rounded flex items-center justify-center border-2 border-slate-200">
-                    <span className="text-[9px] font-black italic text-slate-400">SYSTEM VERIFIED</span>
+                 <div className="w-24 h-8 bg-slate-100 rounded flex items-center justify-center border-2 border-slate-200 gap-1">
+                    <CheckCircle2 className="h-3 w-3 text-slate-400" strokeWidth={3} />
+                    <span className="text-[9px] font-black italic text-slate-400">VERIFIED</span>
                  </div>
               </div>
            </div>

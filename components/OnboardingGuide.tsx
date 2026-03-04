@@ -27,28 +27,28 @@ const OnboardingGuide: React.FC<Props> = ({ onClose }) => {
       onClick={onClose}
     >
       <div 
-        className="w-full max-w-2xl max-h-[90vh] p-8 space-y-6 overflow-y-auto rounded-2xl shadow-2xl animate-slide-up border dark:bg-gray-900 dark:border-gray-700 bg-white border-gray-200"
+        className="w-full max-w-2xl max-h-[90vh] p-8 space-y-6 overflow-y-auto rounded-2xl shadow-2xl animate-slide-up border dark:bg-slate-900 dark:border-slate-800 bg-white border-slate-100"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center">
-          <h2 className="text-2xl font-bold dark:text-gray-100 text-gray-800">Welcome to Bharat Wealth!</h2>
+          <h2 className="text-2xl font-bold dark:text-slate-100 text-slate-800">Welcome to Bharat Wealth!</h2>
           <button 
             onClick={onClose}
-            className="p-2 rounded-full transition-colors dark:hover:bg-gray-700 hover:bg-gray-100"
+            className="p-2 rounded-full transition-colors dark:hover:bg-slate-800 hover:bg-slate-100"
             aria-label="Close guide"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 dark:text-gray-400 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 dark:text-slate-400 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
         
-        <div className="prose prose-slate dark:prose-invert max-w-none text-gray-600 dark:text-gray-300">
+        <div className="prose prose-slate dark:prose-invert max-w-none text-slate-600 dark:text-slate-300">
           <p>This calculator is designed to help you project your investment growth. Here’s a quick guide to get you started:</p>
           
           <div className="space-y-4">
             <div>
-              <h4 className="font-bold text-gray-800 dark:text-gray-100">1. Choose Your Investment Mode</h4>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">1. Choose Your Investment Mode</h4>
               <ul className="!mt-2">
                 <li><strong>SIP (Systematic Investment Plan):</strong> Invest a fixed amount regularly (daily, weekly, etc.). Great for disciplined, long-term wealth creation through compounding.</li>
                 <li><strong>Lumpsum:</strong> Invest a large, one-time amount. Ideal if you have a significant sum of money available to invest at once.</li>
@@ -56,7 +56,7 @@ const OnboardingGuide: React.FC<Props> = ({ onClose }) => {
             </div>
 
             <div>
-              <h4 className="font-bold text-gray-800 dark:text-gray-100">2. Set Your Investment Details</h4>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">2. Set Your Investment Details</h4>
               <ul className="!mt-2">
                 <li><strong>Investment Amount:</strong> The amount you want to invest. This is a recurring amount for SIPs and a one-time amount for Lumpsum.</li>
                 <li><strong>Expected Return Rate (p.a):</strong> The annual return you anticipate from your investment. A typical rate for equity mutual funds is around 12%, but you can adjust it based on your risk appetite.</li>
@@ -65,7 +65,7 @@ const OnboardingGuide: React.FC<Props> = ({ onClose }) => {
             </div>
 
             <div>
-              <h4 className="font-bold text-gray-800 dark:text-gray-100">3. Understand Your Results</h4>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">3. Understand Your Results</h4>
               <ul className="!mt-2">
                 <li><strong>Result Cards:</strong> Get a quick summary of your total investment, estimated returns, and the final projected value.</li>
                 <li><strong>Charts:</strong> Visualize your wealth composition (how much is principal vs. returns) and track your investment's growth year by year with the projection chart.</li>
@@ -73,12 +73,12 @@ const OnboardingGuide: React.FC<Props> = ({ onClose }) => {
             </div>
             
              <div>
-              <h4 className="font-bold text-gray-800 dark:text-gray-100">4. Get AI-Powered Insights</h4>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">4. Get AI-Powered Insights</h4>
               <p className="!mt-2">Click the <strong>"Analyze Plan"</strong> button to get a personalized analysis from Gemini. It provides a summary, a pro tip, and a key consideration to help you make smarter financial decisions.</p>
             </div>
 
             <div>
-              <h4 className="font-bold text-gray-800 dark:text-gray-100">5. Download Your Report</h4>
+              <h4 className="font-bold text-slate-800 dark:text-slate-100">5. Download Your Report</h4>
               <p className="!mt-2">Click the <strong>"Report"</strong> button to download a high-quality image of your investment projection. Perfect for saving, sharing, or including in your financial planning documents.</p>
             </div>
           </div>
