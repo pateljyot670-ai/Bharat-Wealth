@@ -1,6 +1,7 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { SIPInputs, CalculationMode, Frequency } from '../types';
+import { AlertCircle } from 'lucide-react';
 
 interface Props {
   inputs: SIPInputs;
@@ -8,21 +9,50 @@ interface Props {
   onReset: () => void;
 }
 
+interface Errors {
+  investmentAmount?: string;
+  expectedReturn?: string;
+  periodYears?: string;
+}
+
 const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
+  const [errors, setErrors] = useState<Errors>({});
+
+  const validate = (name: string, value: number) => {
+    let error = '';
+    if (name === 'investmentAmount') {
+      const min = inputs.mode === 'SIP' ? 100 : 5000;
+      const max = inputs.mode === 'SIP' ? 500000 : 10000000;
+      if (value < min) error = `Minimum ₹${min.toLocaleString('en-IN')}`;
+      if (value > max) error = `Maximum ₹${(max / 100000).toFixed(0)}L`;
+      if (inputs.mode === 'Lumpsum' && value > 10000000) error = 'Maximum ₹1Cr';
+    } else if (name === 'expectedReturn') {
+      if (value < 1) error = 'Min 1%';
+      if (value > 30) error = 'Max 30%';
+    } else if (name === 'periodYears') {
+      if (value < 1) error = 'Min 1 Yr';
+      if (value > 50) error = 'Max 50 Yrs';
+    }
+    return error;
+  };
+
   const handleValueChange = (name: keyof Omit<SIPInputs, 'mode' | 'frequency'>, valueStr: string) => {
-    // Allow empty string while typing to avoid forcing a 0
     if (valueStr === '') {
       setInputs({ ...inputs, [name]: 0 });
+      setErrors({ ...errors, [name]: validate(name, 0) });
       return;
     }
     const value = parseFloat(valueStr);
     const safeValue = isNaN(value) ? 0 : value;
+    
     setInputs({ ...inputs, [name]: safeValue });
+    setErrors({ ...errors, [name]: validate(name, safeValue) });
   };
 
   const handleModeChange = (mode: CalculationMode) => {
     const investmentAmount = mode === 'SIP' ? 5000 : 100000;
     setInputs({ ...inputs, mode, investmentAmount });
+    setErrors({}); // Clear errors on mode change
   };
 
   const handleFrequencyChange = (frequency: Frequency) => {
@@ -51,34 +81,33 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
 
   const frequencies: Frequency[] = ['Daily', 'Weekly', 'Monthly', 'Quarterly'];
 
-  // Helper to display empty string instead of 0 for better UX while typing
   const displayValue = (val: number) => (val === 0 ? '' : val);
 
   return (
     <div className="space-y-6 p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all duration-300 dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100 hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
       {/* Mode Switcher */}
-      <div className="flex p-1 rounded-xl dark:bg-slate-800 bg-slate-100/80">
-        <button
-          onClick={() => handleModeChange('SIP')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
-            inputs.mode === 'SIP' 
-              ? 'dark:bg-slate-700 bg-white dark:text-indigo-400 text-indigo-600 shadow-sm ring-1 ring-black/5' 
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-          }`}
-        >
-          SIP
-        </button>
-        <button
-          onClick={() => handleModeChange('Lumpsum')}
-          className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
-            inputs.mode === 'Lumpsum' 
-              ? 'dark:bg-slate-700 bg-white dark:text-indigo-400 text-indigo-600 shadow-sm ring-1 ring-black/5' 
-              : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-          }`}
-        >
-          Lumpsum
-        </button>
-      </div>
+        <div className="flex p-1 rounded-xl dark:bg-slate-800 bg-slate-200/50">
+          <button
+            onClick={() => handleModeChange('SIP')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
+              inputs.mode === 'SIP' 
+                ? 'dark:bg-slate-700 bg-white dark:text-indigo-400 text-indigo-700 shadow-sm ring-1 ring-black/5' 
+                : 'text-slate-600 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+          >
+            SIP
+          </button>
+          <button
+            onClick={() => handleModeChange('Lumpsum')}
+            className={`flex-1 py-2 px-4 rounded-lg text-sm font-bold transition-all duration-200 ${
+              inputs.mode === 'Lumpsum' 
+                ? 'dark:bg-slate-700 bg-white dark:text-indigo-400 text-indigo-700 shadow-sm ring-1 ring-black/5' 
+                : 'text-slate-600 hover:text-slate-900 dark:hover:text-slate-300'
+            }`}
+          >
+            Lumpsum
+          </button>
+        </div>
 
       <div className="flex items-center justify-between pt-2">
         <div className="flex items-center gap-3">
@@ -88,7 +117,10 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
           </h2>
         </div>
         <button 
-          onClick={onReset}
+          onClick={() => {
+            onReset();
+            setErrors({});
+          }}
           className="text-[10px] font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border dark:border-slate-700 border-slate-200 dark:text-slate-400 text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
         >
           Reset
@@ -97,7 +129,7 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
 
       {inputs.mode === 'SIP' && (
         <div className="space-y-2">
-          <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">Frequency</label>
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">Frequency</label>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
             {frequencies.map((freq) => (
               <button
@@ -106,7 +138,7 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
                 className={`py-2 px-1 rounded-lg text-xs font-bold border transition-all duration-200 ${
                   inputs.frequency === freq
                     ? 'bg-indigo-600 text-white border-indigo-600 shadow-md ring-2 ring-indigo-100 dark:ring-indigo-900/50'
-                    : 'dark:bg-slate-800 bg-slate-50 dark:text-slate-400 text-slate-500 dark:border-slate-700 border-slate-200 hover:border-indigo-300 dark:hover:border-indigo-700 hover:bg-white'
+                    : 'dark:bg-slate-800 bg-slate-100 dark:text-slate-600 text-slate-700 dark:border-slate-700 border-slate-200 hover:border-indigo-400 dark:hover:border-indigo-700 hover:bg-white'
                 }`}
               >
                 {freq}
@@ -119,21 +151,31 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
       {/* Investment Amount */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-slate-300 text-slate-600">
+          <label className="text-sm font-bold dark:text-slate-200 text-slate-800">
             {inputs.mode === 'SIP' ? `${inputs.frequency} Amount` : 'One-time Amount'}
           </label>
-          <div className="flex items-center px-3 py-1 rounded-xl border transition-all duration-200 dark:bg-indigo-900/20 dark:border-indigo-800/50 dark:focus-within:ring-indigo-900/30 bg-indigo-50/50 border-indigo-100 focus-within:ring-4 focus-within:ring-indigo-50 focus-within:bg-white">
-            <span className="text-indigo-500 font-bold mr-1">₹</span>
+          <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+            errors.investmentAmount 
+              ? 'bg-red-50/10 dark:bg-red-900/5 border-red-200/30 dark:border-red-800/20 focus-within:ring-red-100/10' 
+              : 'bg-indigo-50/10 dark:bg-indigo-900/5 border-indigo-200/50 dark:border-indigo-800/20 focus-within:ring-indigo-100/30 focus-within:bg-white dark:focus-within:bg-slate-900'
+            } border focus-within:ring-4`}>
+            <span className={`${errors.investmentAmount ? 'text-red-500' : 'text-indigo-500'} font-bold mr-1`}>₹</span>
             <input
               type="number"
               value={displayValue(inputs.investmentAmount)}
               onFocus={(e) => e.target.select()}
               onChange={(e) => handleValueChange('investmentAmount', e.target.value)}
               placeholder="0"
-              className="w-24 bg-transparent text-lg font-bold dark:text-indigo-400 text-indigo-700 border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`w-24 bg-transparent text-lg font-bold ${errors.investmentAmount ? 'text-red-700' : 'text-indigo-700 dark:text-indigo-400'} border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             />
           </div>
         </div>
+        {errors.investmentAmount && (
+          <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 animate-fade-in">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-bold">{errors.investmentAmount}</span>
+          </div>
+        )}
         <input
           type="range"
           min={inputs.mode === 'SIP' ? 100 : 5000}
@@ -155,8 +197,12 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
       {/* Expected Return */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-slate-300 text-slate-600">Return Rate (p.a)</label>
-          <div className="flex items-center px-3 py-1 rounded-xl border transition-all duration-200 dark:bg-emerald-900/20 dark:border-emerald-800/50 dark:focus-within:ring-emerald-900/30 bg-emerald-50/50 border-emerald-100 focus-within:ring-4 focus-within:ring-emerald-50 focus-within:bg-white">
+          <label className="text-sm font-bold dark:text-slate-200 text-slate-800">Return Rate (p.a)</label>
+          <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+            errors.expectedReturn 
+              ? 'bg-red-50/10 dark:bg-red-900/5 border-red-200/30 dark:border-red-800/20 focus-within:ring-red-100/10' 
+              : 'bg-emerald-50/10 dark:bg-emerald-900/5 border-emerald-200/50 dark:border-emerald-800/20 focus-within:ring-emerald-100/30 focus-within:bg-white dark:focus-within:bg-slate-900'
+            } border focus-within:ring-4`}>
             <input
               type="number"
               value={displayValue(inputs.expectedReturn)}
@@ -164,11 +210,17 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
               onFocus={(e) => e.target.select()}
               onChange={(e) => handleValueChange('expectedReturn', e.target.value)}
               placeholder="0"
-              className="w-14 bg-transparent text-lg font-bold dark:text-emerald-400 text-emerald-700 border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`w-14 bg-transparent text-lg font-bold ${errors.expectedReturn ? 'text-red-700' : 'text-emerald-700 dark:text-emerald-400'} border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             />
-            <span className="text-emerald-500 font-bold ml-1">%</span>
+            <span className={`${errors.expectedReturn ? 'text-red-500' : 'text-emerald-500'} font-bold ml-1`}>%</span>
           </div>
         </div>
+        {errors.expectedReturn && (
+          <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 animate-fade-in">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-bold">{errors.expectedReturn}</span>
+          </div>
+        )}
         <input
           type="range"
           min="1"
@@ -190,19 +242,29 @@ const InputSection: React.FC<Props> = ({ inputs, setInputs, onReset }) => {
       {/* Period */}
       <div className="space-y-4">
         <div className="flex justify-between items-center">
-          <label className="text-sm font-semibold dark:text-slate-300 text-slate-600">Time Period</label>
-          <div className="flex items-center px-3 py-1 rounded-xl border transition-all duration-200 dark:bg-amber-900/20 dark:border-amber-800/50 dark:focus-within:ring-amber-900/30 bg-amber-50/50 border-amber-100 focus-within:ring-4 focus-within:ring-amber-50 focus-within:bg-white">
+          <label className="text-sm font-bold dark:text-slate-200 text-slate-800">Time Period</label>
+          <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+            errors.periodYears 
+              ? 'bg-red-50/10 dark:bg-red-900/5 border-red-200/30 dark:border-red-800/20 focus-within:ring-red-100/10' 
+              : 'bg-amber-50/10 dark:bg-amber-900/5 border-amber-200/50 dark:border-amber-800/20 focus-within:ring-amber-100/30 focus-within:bg-white dark:focus-within:bg-slate-900'
+            } border focus-within:ring-4`}>
             <input
               type="number"
               value={displayValue(inputs.periodYears)}
               onFocus={(e) => e.target.select()}
               onChange={(e) => handleValueChange('periodYears', e.target.value)}
               placeholder="0"
-              className="w-10 bg-transparent text-lg font-bold dark:text-amber-400 text-amber-700 border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+              className={`w-10 bg-transparent text-lg font-bold ${errors.periodYears ? 'text-red-700' : 'text-amber-700 dark:text-amber-400'} border-none outline-none text-right [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none`}
             />
-            <span className="text-amber-500 font-bold ml-1">Yr</span>
+            <span className={`${errors.periodYears ? 'text-red-500' : 'text-amber-500'} font-bold ml-1`}>Yr</span>
           </div>
         </div>
+        {errors.periodYears && (
+          <div className="flex items-center gap-1.5 text-red-600 dark:text-red-400 animate-fade-in">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span className="text-[11px] font-bold">{errors.periodYears}</span>
+          </div>
+        )}
         <input
           type="range"
           min="1"

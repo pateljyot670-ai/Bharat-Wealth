@@ -144,13 +144,13 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.08} />
                 <XAxis 
                   dataKey="year" 
-                  tick={{ fontSize: 11, fill: '#6b7280' }} 
+                  tick={{ fontSize: 11, fill: '#475569' }} 
                   axisLine={false} 
                   tickLine={false}
                   padding={{ left: 10, right: 10 }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: '#9ca3af' }} 
+                  tick={{ fontSize: 10, fill: '#64748b' }} 
                   axisLine={false} 
                   tickLine={false} 
                   tickFormatter={(val) => {

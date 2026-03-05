@@ -8,7 +8,7 @@ import ResultCards from './components/ResultCards';
 import ChartsSection from './components/ChartsSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import ShareModal from './components/ShareModal';
-import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw } from 'lucide-react';
+import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -33,6 +33,7 @@ const App: React.FC = () => {
 
   const [inputs, setInputs] = useState<SIPInputs>(DEFAULT_INPUTS);
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
+  const [aiError, setAiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
@@ -52,11 +53,17 @@ const App: React.FC = () => {
 
   const handleGetInsights = async () => {
     setIsGenerating(true);
+    setAiError(null);
     try {
       const insight = await getFinancialInsights(inputs, results);
-      if (insight) setAiInsight(insight);
+      if (insight) {
+        setAiInsight(insight);
+      } else {
+        setAiError("Could not generate insights. Please try again.");
+      }
     } catch (error) {
       console.error(error);
+      setAiError("AI Analysis failed. Please check your connection or try again later.");
     } finally {
       setIsGenerating(false);
     }
@@ -65,6 +72,7 @@ const App: React.FC = () => {
   const handleReset = () => {
     setInputs(DEFAULT_INPUTS);
     setAiInsight(null);
+    setAiError(null);
   };
 
   const handleDownloadPdf = async () => {
@@ -113,8 +121,13 @@ const App: React.FC = () => {
   };
 
   const shareText = useMemo(() => {
-    return `Just projected my wealth growth with Bharat Wealth! Plan your financial future too. #BharatWealth #SIP`;
-  }, []);
+    const amount = formatCurrency(inputs.investmentAmount);
+    const total = formatCurrency(results.totalValue);
+    const years = inputs.periodYears;
+    const mode = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'Lumpsum';
+    
+    return `I just projected my wealth growth with Bharat Wealth! 🚀\n\n💰 ${mode}: ${amount}\n⏳ Period: ${years} Years\n📈 Estimated Value: ${total}\n\nPlan your financial future too!`;
+  }, [inputs.investmentAmount, inputs.periodYears, inputs.mode, inputs.frequency, results.totalValue]);
 
   const milestones = useMemo(() => {
     const data = results.yearlyData;
@@ -125,12 +138,12 @@ const App: React.FC = () => {
   }, [results.yearlyData]);
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-gradient-to-br from-slate-50 via-gray-50 to-slate-100 text-slate-900'} pb-24`}>
+    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-white text-slate-900'} pb-24`}>
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
-      {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl="https://bharatwealth.app" />}
+      {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl={window.location.origin} />}
       
       {/* APP HEADER */}
-      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/80 border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
+      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
         <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
           <div className="flex items-center gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
             <div className="relative w-10 h-10 transform transition-transform group-hover:rotate-12">
@@ -169,17 +182,19 @@ const App: React.FC = () => {
         <aside className="lg:col-span-4 space-y-8 screenshot-hide">
           <InputSection inputs={inputs} setInputs={setInputs} onReset={handleReset} />
           
-          {/* AI Strategy Advisor Box (Dark Blue Scheme) 🔵 */}
-          <div className="p-8 rounded-3xl bg-blue-900 text-white space-y-4 shadow-xl border border-blue-800">
+          {/* AI Strategy Advisor Box (Responsive Scheme) 🔵 */}
+          <div className={`p-8 rounded-3xl space-y-4 shadow-xl border transition-all duration-300 ${darkMode ? 'bg-blue-900 border-blue-800 text-white' : 'bg-indigo-600 border-indigo-500 text-white'}`}>
              <h3 className="text-xl font-bold flex items-center gap-2">
-                <span className="text-blue-400">⚡</span> AI Strategy Advisor
+                <span className="text-indigo-200">⚡</span> AI Strategy Advisor
              </h3>
-             <p className="text-sm opacity-90 font-medium text-blue-100">Get a professional risk-reward analysis based on your current inputs.</p>
+             <p className="text-sm font-medium text-indigo-50">Get a professional risk-reward analysis based on your current inputs.</p>
              <div className="pt-2">
                <button 
                  onClick={handleGetInsights} 
                  disabled={isGenerating}
-                 className="w-full py-4 bg-white text-blue-900 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-blue-50 transition-all active:scale-95 shadow-lg"
+                 className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
+                   darkMode ? 'bg-white text-blue-900 hover:bg-blue-50' : 'bg-white text-indigo-600 hover:bg-indigo-50'
+                 }`}
                >
                   {isGenerating ? 'Analyzing...' : 'Analyze Plan'}
                </button>
@@ -223,6 +238,13 @@ const App: React.FC = () => {
            </div>
            <ResultCards results={results} />
            <ChartsSection results={results} />
+           
+           {aiError && (
+             <div className="p-6 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 flex items-center gap-3 animate-fade-in">
+               <AlertCircle className="h-5 w-5 text-red-600 dark:text-red-400 shrink-0" />
+               <p className="text-sm font-medium text-red-800 dark:text-red-300">{aiError}</p>
+             </div>
+           )}
            
            {aiInsight && (
              <div className={`p-10 rounded-[2.5rem] border shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>

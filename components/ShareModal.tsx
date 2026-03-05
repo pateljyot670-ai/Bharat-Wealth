@@ -1,5 +1,5 @@
-import React, { useEffect } from 'react';
-import { X, Twitter, Facebook, MessageCircle } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { X, Twitter, Facebook, MessageCircle, Copy, Check } from 'lucide-react';
 
 interface Props {
   onClose: () => void;
@@ -8,6 +8,8 @@ interface Props {
 }
 
 const ShareModal: React.FC<Props> = ({ onClose, shareText, appUrl }) => {
+  const [copied, setCopied] = useState(false);
+
   useEffect(() => {
     const handleEsc = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
@@ -23,7 +25,7 @@ const ShareModal: React.FC<Props> = ({ onClose, shareText, appUrl }) => {
     };
   }, [onClose]);
 
-  const encodedShareText = encodeURIComponent(shareText);
+  const encodedShareText = encodeURIComponent(`${shareText}\n\n${appUrl}`);
   const encodedAppUrl = encodeURIComponent(appUrl);
 
   const shareOnTwitter = () => {
@@ -39,6 +41,16 @@ const ShareModal: React.FC<Props> = ({ onClose, shareText, appUrl }) => {
   const shareOnWhatsApp = () => {
     const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedShareText}`;
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const copyToClipboard = async () => {
+    try {
+      await navigator.clipboard.writeText(`${shareText}\n\n${appUrl}`);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy text: ', err);
+    }
   };
 
   return (
@@ -85,6 +97,29 @@ const ShareModal: React.FC<Props> = ({ onClose, shareText, appUrl }) => {
             <MessageCircle className="h-5 w-5" strokeWidth={2.5} />
             Share on WhatsApp
           </button>
+
+          <div className="pt-2">
+            <button 
+              onClick={copyToClipboard}
+              className={`w-full flex items-center justify-center gap-3 py-3 font-bold rounded-lg transition-all border-2 ${
+                copied 
+                  ? 'bg-emerald-50 border-emerald-500 text-emerald-600' 
+                  : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:border-gray-300'
+              }`}
+            >
+              {copied ? (
+                <>
+                  <Check className="h-5 w-5" strokeWidth={2.5} />
+                  Copied!
+                </>
+              ) : (
+                <>
+                  <Copy className="h-5 w-5" strokeWidth={2.5} />
+                  Copy Plan Details
+                </>
+              )}
+            </button>
+          </div>
         </div>
       </div>
     </div>

@@ -22,9 +22,10 @@ export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResult
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.1-pro-preview',
       contents: prompt,
       config: {
+        systemInstruction: "You are a professional financial advisor specializing in the Indian market. Provide structured, actionable investment insights in JSON format.",
         responseMimeType: "application/json",
         responseSchema: {
           type: Type.OBJECT,
@@ -47,14 +48,16 @@ export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResult
       }
     });
 
-    const text = response.text?.trim();
+    const text = response.text;
     if (text) {
-      return JSON.parse(text) as AIInsight;
+      // Handle potential markdown wrapping just in case
+      const cleanText = text.replace(/```json\n?|```/g, '').trim();
+      return JSON.parse(cleanText) as AIInsight;
     }
-    return null;
+    throw new Error("Empty response from AI");
 
   } catch (error) {
     console.error("Gemini API Error:", error);
-    return null;
+    throw error; // Re-throw to handle in UI
   }
 };
