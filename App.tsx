@@ -61,9 +61,9 @@ const App: React.FC = () => {
       } else {
         setAiError("Could not generate insights. Please try again.");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error(error);
-      setAiError("AI Analysis failed. Please check your connection or try again later.");
+      setAiError(error.message || "AI Analysis failed. Please check your connection or try again later.");
     } finally {
       setIsGenerating(false);
     }
