@@ -82,3 +82,52 @@ export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResult
   }
   throw lastError;
 };
+
+export const chatWithAI = async (message: string, context: { inputs: SIPInputs, results: SIPResults }): Promise<string> => {
+  let apiKey: string | undefined;
+  try {
+    apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
+  } catch (e) {
+    console.warn("Could not access process.env directly:", e);
+  }
+  
+  if (!apiKey) {
+    throw new Error("AI Service is currently unavailable.");
+  }
+
+  const ai = new GoogleGenAI({ apiKey });
+  const { inputs, results } = context;
+  const frequencyText = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'One-time Lumpsum';
+
+  const systemPrompt = `
+    You are Bharat Wealth AI, a friendly and professional financial advisor for Indian investors.
+    The user is currently looking at this investment plan:
+    - Type: ${frequencyText}
+    - Amount: ₹${inputs.investmentAmount.toLocaleString('en-IN')}
+    - Expected Return: ${inputs.expectedReturn}% p.a.
+    - Horizon: ${inputs.periodYears} years
+    - Estimated Final Value: ₹${results.totalValue.toLocaleString('en-IN')}
+    - Total Invested: ₹${results.totalInvested.toLocaleString('en-IN')}
+    - Wealth Gained: ₹${results.estimatedReturns.toLocaleString('en-IN')}
+
+    Answer the user's questions about this plan or general financial topics (SIP, Lumpsum, Mutual Funds, Inflation, Taxation in India).
+    Keep responses concise, helpful, and easy to understand. Use emojis where appropriate.
+    Always clarify that you provide information, not certified financial advice.
+  `;
+
+  try {
+    const response = await ai.models.generateContent({
+      model: 'gemini-3-flash-preview',
+      contents: [{ parts: [{ text: message }] }],
+      config: {
+        systemInstruction: systemPrompt,
+      }
+    });
+
+    return response.text || "I'm sorry, I couldn't process that request.";
+  } catch (error: any) {
+    console.error("Chat AI Error:", error);
+    throw new Error("Failed to get response from AI. Please try again.");
+  }
+};
+

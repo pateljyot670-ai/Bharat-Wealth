@@ -8,7 +8,8 @@ import ResultCards from './components/ResultCards';
 import ChartsSection from './components/ChartsSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import ShareModal from './components/ShareModal';
-import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle } from 'lucide-react';
+import AIChatbot from './components/AIChatbot';
+import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -38,6 +39,7 @@ const App: React.FC = () => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGuide, setShowGuide] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [showChat, setShowChat] = useState(false);
 
   useEffect(() => {
     if (darkMode) {
@@ -141,6 +143,14 @@ const App: React.FC = () => {
     <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-white text-slate-900'} pb-24`}>
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl={window.location.origin} />}
+      
+      <AIChatbot 
+        inputs={inputs}
+        results={results}
+        darkMode={darkMode}
+        isOpen={showChat}
+        setIsOpen={setShowChat}
+      />
       
       {/* APP HEADER */}
       <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
@@ -428,6 +438,17 @@ const App: React.FC = () => {
                  <div className="w-24 h-8 bg-slate-100 rounded flex items-center justify-center border-2 border-slate-200 gap-1">
                     <CheckCircle2 className="h-3 w-3 text-slate-400" strokeWidth={3} />
                     <span className="text-[9px] font-black italic text-slate-400">VERIFIED</span>
+                 </div>
+                 
+                 <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+                   <p className="text-sm text-slate-500 dark:text-slate-400">Have more questions about this plan?</p>
+                   <button 
+                     onClick={() => setShowChat(true)}
+                     className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                   >
+                     <MessageSquare className="h-4 w-4" />
+                     Ask AI Assistant
+                   </button>
                  </div>
               </div>
            </div>
