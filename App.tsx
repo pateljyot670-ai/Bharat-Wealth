@@ -55,6 +55,7 @@ const App: React.FC = () => {
   const [aiError, setAiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
   const [showGuide, setShowGuide] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -83,17 +84,12 @@ const App: React.FC = () => {
     setIsGenerating(true);
     setAiError(null);
     try {
-      // For now, AI insights are only for SIP/Lumpsum as the service is tuned for that
-      // We can expand it later
-      if (mode === 'SIP' || mode === 'Lumpsum') {
-        const insight = await getFinancialInsights(sipInputs, results as SIPResults);
-        if (insight) {
-          setAiInsight(insight);
-        } else {
-          setAiError("Could not generate insights. Please try again.");
-        }
+      const currentInputs = mode === 'SIP' || mode === 'Lumpsum' ? sipInputs : mode === 'Loan' ? loanInputs : swpInputs;
+      const insight = await getFinancialInsights(currentInputs, results);
+      if (insight) {
+        setAiInsight(insight);
       } else {
-        setAiError("AI Analysis is currently only available for Investment plans.");
+        setAiError("Could not generate insights. Please try again.");
       }
     } catch (error: any) {
       console.error(error);
@@ -114,29 +110,21 @@ const App: React.FC = () => {
   const handleDownloadPdf = async () => {
     if (!pdfTemplateRef.current || isCapturing) return;
     setIsCapturing(true);
+    setPdfError(null);
     
-    await new Promise(r => setTimeout(r, 100));
+    await new Promise(r => setTimeout(r, 500)); // Give more time for rendering
 
     try {
-      // html2canvas has issues with modern oklch colors used by Tailwind v4.
-      // We override these to standard hex/rgb in index.css for the PDF template.
       const canvas = await html2canvas(pdfTemplateRef.current, {
         scale: 2,
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        onclone: (clonedDoc) => {
-          const el = clonedDoc.getElementById('pdf-report-hidden-template');
-          if (el) {
-            el.style.display = 'block';
-            // Ensure no oklch colors leak in from computed styles if possible
-            el.style.color = '#0f172a';
-            el.style.backgroundColor = '#ffffff';
-          }
-        }
+        allowTaint: true,
+        removeContainer: true
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.8);
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
@@ -149,8 +137,9 @@ const App: React.FC = () => {
 
       pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
       pdf.save(`BharatWealth_Report_${new Date().getTime()}.pdf`);
-    } catch (err) {
+    } catch (err: any) {
       console.error("PDF Generation Error:", err);
+      setPdfError("Failed to generate PDF. Please try again or use a different browser.");
     } finally {
       setIsCapturing(false);
     }
@@ -327,6 +316,14 @@ const App: React.FC = () => {
                 </button>
               </div>
            </div>
+           
+           {pdfError && (
+             <div className="p-4 rounded-xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 flex items-center gap-3 animate-fade-in mb-4">
+               <AlertCircle className="h-4 w-4 text-red-600 dark:text-red-400 shrink-0" />
+               <p className="text-xs font-medium text-red-800 dark:text-red-300">{pdfError}</p>
+             </div>
+           )}
+
            <ResultCards mode={mode} results={results} />
            <ChartsSection mode={mode} results={results} />
            
@@ -392,13 +389,17 @@ const App: React.FC = () => {
       <div 
         ref={pdfTemplateRef}
         id="pdf-report-hidden-template"
-        className="hidden" 
+        className="screenshot-hide" 
         style={{ 
+          position: 'fixed',
+          left: '-9999px',
+          top: '0',
           width: '800px', 
           backgroundColor: '#ffffff', 
           color: '#0f172a',
           padding: '60px',
-          fontFamily: "'Inter', sans-serif"
+          fontFamily: "'Inter', sans-serif",
+          zIndex: -100
         }}
       >
         <div className="border-b-8 border-indigo-900 pb-12 mb-12 relative overflow-hidden">

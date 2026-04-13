@@ -2,7 +2,7 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode } from "../types";
 
-export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResults): Promise<AIInsight | null> => {
+ export const getFinancialInsights = async (inputs: SIPInputs | LoanInputs | SWPInputs, results: SIPResults | LoanResults | SWPResults): Promise<AIInsight | null> => {
   let apiKey: string | undefined;
   
   try {
@@ -18,16 +18,53 @@ export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResult
 
   const ai = new GoogleGenAI({ apiKey });
   
-  const frequencyText = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'One-time Lumpsum';
+  let planDetails = '';
+  let mode = 'Investment';
+
+  if ('investmentAmount' in inputs && 'totalValue' in (results as SIPResults)) {
+    const sip = inputs as SIPInputs;
+    const res = results as SIPResults;
+    mode = sip.mode;
+    const frequencyText = sip.mode === 'SIP' ? `${sip.frequency} SIP` : 'One-time Lumpsum';
+    planDetails = `
+      - Type: ${frequencyText}
+      - Amount: ₹${sip.investmentAmount.toLocaleString('en-IN')}
+      - Return Rate: ${sip.expectedReturn}% p.a.
+      - Horizon: ${sip.periodYears} years
+      - Final Value: ₹${res.totalValue.toLocaleString('en-IN')}
+    `;
+  } else if ('loanAmount' in inputs) {
+    const loan = inputs as LoanInputs;
+    const res = results as LoanResults;
+    mode = 'Loan';
+    planDetails = `
+      - Type: Loan EMI
+      - Loan Amount: ₹${loan.loanAmount.toLocaleString('en-IN')}
+      - Interest Rate: ${loan.interestRate}% p.a.
+      - Tenure: ${loan.tenureYears} years
+      - Monthly EMI: ₹${res.monthlyEMI.toLocaleString('en-IN')}
+      - Total Interest: ₹${res.totalInterest.toLocaleString('en-IN')}
+      - Total Payment: ₹${res.totalPayment.toLocaleString('en-IN')}
+    `;
+  } else if ('totalInvestment' in inputs) {
+    const swp = inputs as SWPInputs;
+    const res = results as SWPResults;
+    mode = 'SWP';
+    planDetails = `
+      - Type: Systematic Withdrawal Plan (SWP)
+      - Total Investment: ₹${swp.totalInvestment.toLocaleString('en-IN')}
+      - Monthly Withdrawal: ₹${swp.withdrawalAmount.toLocaleString('en-IN')}
+      - Expected Return: ${swp.expectedReturn}% p.a.
+      - Period: ${swp.periodYears} years
+      - Total Withdrawn: ₹${res.totalWithdrawn.toLocaleString('en-IN')}
+      - Final Balance: ₹${res.finalBalance.toLocaleString('en-IN')}
+    `;
+  }
   
   const prompt = `
-    Analyze the following investment plan for an Indian investor and provide a structured JSON response.
+    Analyze the following ${mode} plan for an Indian investor and provide a structured JSON response.
     Details:
-    - Type: ${frequencyText}
-    - Amount: ₹${inputs.investmentAmount.toLocaleString('en-IN')}
-    - Return Rate: ${inputs.expectedReturn}% p.a.
-    - Horizon: ${inputs.periodYears} years
-    - Final Value: ₹${results.totalValue.toLocaleString('en-IN')}
+    ${planDetails}
     
     Provide a concise analysis, one pro tip, and one warning.
   `;
