@@ -1,7 +1,9 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { SIPInputs, SIPResults, AIInsight } from './types';
+import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode } from './types';
 import { calculateWealth, formatCurrency } from './utils/sipCalculations';
+import { calculateLoan } from './utils/loanCalculations';
+import { calculateSWP } from './utils/swpCalculations';
 import { getFinancialInsights } from './services/geminiService';
 import InputSection from './components/InputSection';
 import ResultCards from './components/ResultCards';
@@ -9,16 +11,29 @@ import ChartsSection from './components/ChartsSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import ShareModal from './components/ShareModal';
 import AIChatbot from './components/AIChatbot';
-import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
+import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle, MessageSquare, MessageCircle } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
-const DEFAULT_INPUTS: SIPInputs = {
+const DEFAULT_SIP_INPUTS: SIPInputs = {
   investmentAmount: 5000,
   expectedReturn: 12,
   periodYears: 10,
   mode: 'SIP',
   frequency: 'Monthly'
+};
+
+const DEFAULT_LOAN_INPUTS: LoanInputs = {
+  loanAmount: 1000000,
+  interestRate: 8.5,
+  tenureYears: 20
+};
+
+const DEFAULT_SWP_INPUTS: SWPInputs = {
+  totalInvestment: 1000000,
+  withdrawalAmount: 10000,
+  expectedReturn: 8,
+  periodYears: 10
 };
 
 const App: React.FC = () => {
@@ -32,7 +47,10 @@ const App: React.FC = () => {
     return false;
   });
 
-  const [inputs, setInputs] = useState<SIPInputs>(DEFAULT_INPUTS);
+  const [mode, setMode] = useState<CalculationMode>('SIP');
+  const [sipInputs, setSipInputs] = useState<SIPInputs>(DEFAULT_SIP_INPUTS);
+  const [loanInputs, setLoanInputs] = useState<LoanInputs>(DEFAULT_LOAN_INPUTS);
+  const [swpInputs, setSwpInputs] = useState<SWPInputs>(DEFAULT_SWP_INPUTS);
   const [aiInsight, setAiInsight] = useState<AIInsight | null>(null);
   const [aiError, setAiError] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -51,17 +69,31 @@ const App: React.FC = () => {
     }
   }, [darkMode]);
 
-  const results = useMemo(() => calculateWealth(inputs), [inputs]);
+  const results = useMemo(() => {
+    if (mode === 'SIP' || mode === 'Lumpsum') {
+      return calculateWealth(sipInputs);
+    } else if (mode === 'Loan') {
+      return calculateLoan(loanInputs);
+    } else {
+      return calculateSWP(swpInputs);
+    }
+  }, [mode, sipInputs, loanInputs, swpInputs]);
 
   const handleGetInsights = async () => {
     setIsGenerating(true);
     setAiError(null);
     try {
-      const insight = await getFinancialInsights(inputs, results);
-      if (insight) {
-        setAiInsight(insight);
+      // For now, AI insights are only for SIP/Lumpsum as the service is tuned for that
+      // We can expand it later
+      if (mode === 'SIP' || mode === 'Lumpsum') {
+        const insight = await getFinancialInsights(sipInputs, results as SIPResults);
+        if (insight) {
+          setAiInsight(insight);
+        } else {
+          setAiError("Could not generate insights. Please try again.");
+        }
       } else {
-        setAiError("Could not generate insights. Please try again.");
+        setAiError("AI Analysis is currently only available for Investment plans.");
       }
     } catch (error: any) {
       console.error(error);
@@ -72,7 +104,9 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
-    setInputs(DEFAULT_INPUTS);
+    if (mode === 'SIP' || mode === 'Lumpsum') setSipInputs(DEFAULT_SIP_INPUTS);
+    else if (mode === 'Loan') setLoanInputs(DEFAULT_LOAN_INPUTS);
+    else setSwpInputs(DEFAULT_SWP_INPUTS);
     setAiInsight(null);
     setAiError(null);
   };
@@ -123,21 +157,39 @@ const App: React.FC = () => {
   };
 
   const shareText = useMemo(() => {
-    const amount = formatCurrency(inputs.investmentAmount);
-    const total = formatCurrency(results.totalValue);
-    const years = inputs.periodYears;
-    const mode = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'Lumpsum';
-    
-    return `I just projected my wealth growth with Bharat Wealth! 🚀\n\n💰 ${mode}: ${amount}\n⏳ Period: ${years} Years\n📈 Estimated Value: ${total}\n\nPlan your financial future too!`;
-  }, [inputs.investmentAmount, inputs.periodYears, inputs.mode, inputs.frequency, results.totalValue]);
+    if (mode === 'SIP' || mode === 'Lumpsum') {
+      const res = results as SIPResults;
+      const amount = formatCurrency(sipInputs.investmentAmount);
+      const total = formatCurrency(res.totalValue);
+      const years = sipInputs.periodYears;
+      const m = sipInputs.mode === 'SIP' ? `${sipInputs.frequency} SIP` : 'Lumpsum';
+      return `I just projected my wealth growth with Bharat Wealth! 🚀\n\n💰 ${m}: ${amount}\n⏳ Period: ${years} Years\n📈 Estimated Value: ${total}\n\nPlan your financial future too!`;
+    } else if (mode === 'Loan') {
+      const res = results as LoanResults;
+      return `I just calculated my Loan EMI with Bharat Wealth! 🏠\n\n💰 Loan: ${formatCurrency(loanInputs.loanAmount)}\n📉 EMI: ${formatCurrency(res.monthlyEMI)}\n⏳ Tenure: ${loanInputs.tenureYears} Years\n\nCalculate yours now!`;
+    } else {
+      const res = results as SWPResults;
+      return `I just planned my retirement income with SWP on Bharat Wealth! 🏖️\n\n💰 Investment: ${formatCurrency(swpInputs.totalInvestment)}\n💵 Monthly Withdrawal: ${formatCurrency(swpInputs.withdrawalAmount)}\n📉 Final Balance: ${formatCurrency(res.finalBalance)}\n\nPlan your retirement too!`;
+    }
+  }, [mode, sipInputs, loanInputs, swpInputs, results]);
 
   const milestones = useMemo(() => {
-    const data = results.yearlyData;
+    let data: any[] = [];
+    if (mode === 'SIP' || mode === 'Lumpsum') data = (results as SIPResults).yearlyData;
+    else if (mode === 'Loan') data = (results as LoanResults).amortizationData;
+    else data = (results as SWPResults).yearlyData;
+
     if (data.length <= 5) return data;
     const step = Math.floor(data.length / 5);
     const filtered = data.filter((_, i) => i % step === 0 || i === data.length - 1);
     return Array.from(new Set(filtered.map(d => d.year))).map(y => data.find(d => d.year === y)!);
-  }, [results.yearlyData]);
+  }, [mode, results]);
+
+  const whatsappLink = useMemo(() => {
+    const phone = "7698428945";
+    const message = encodeURIComponent(`Namaste! I'm interested in the ${mode} plan I just calculated on Bharat Wealth.\n\nDetails:\n${shareText}\n\nCan you provide more information?`);
+    return `https://wa.me/${phone}?text=${message}`;
+  }, [mode, shareText]);
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-white text-slate-900'} pb-24`}>
@@ -145,12 +197,31 @@ const App: React.FC = () => {
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl={window.location.origin} />}
       
       <AIChatbot 
-        inputs={inputs}
+        mode={mode}
+        sipInputs={sipInputs}
+        loanInputs={loanInputs}
+        swpInputs={swpInputs}
         results={results}
         darkMode={darkMode}
         isOpen={showChat}
         setIsOpen={setShowChat}
       />
+
+      {/* Floating WhatsApp Button */}
+      <a
+        href={whatsappLink}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-24 right-6 p-4 bg-[#25D366] text-white rounded-full shadow-2xl hover:bg-[#128C7E] transition-all transform hover:scale-110 z-50 flex items-center gap-2 group screenshot-hide"
+        aria-label="Chat on WhatsApp"
+      >
+        <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        </svg>
+        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap">
+          WhatsApp Us
+        </span>
+      </a>
       
       {/* APP HEADER */}
       <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
@@ -190,7 +261,17 @@ const App: React.FC = () => {
       {/* DASHBOARD UI */}
       <main className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
         <aside className="lg:col-span-4 space-y-8 screenshot-hide">
-          <InputSection inputs={inputs} setInputs={setInputs} onReset={handleReset} />
+          <InputSection 
+            mode={mode}
+            setMode={setMode}
+            sipInputs={sipInputs}
+            setSipInputs={setSipInputs}
+            loanInputs={loanInputs}
+            setLoanInputs={setLoanInputs}
+            swpInputs={swpInputs}
+            setSwpInputs={setSwpInputs}
+            onReset={handleReset} 
+          />
           
           {/* AI Strategy Advisor Box (Responsive Scheme) 🔵 */}
           <div className={`p-8 rounded-3xl space-y-4 shadow-xl border transition-all duration-300 ${darkMode ? 'bg-blue-900 border-blue-800 text-white' : 'bg-indigo-600 border-indigo-500 text-white'}`}>
@@ -246,8 +327,8 @@ const App: React.FC = () => {
                 </button>
               </div>
            </div>
-           <ResultCards results={results} />
-           <ChartsSection results={results} />
+           <ResultCards mode={mode} results={results} />
+           <ChartsSection mode={mode} results={results} />
            
            {aiError && (
              <div className="p-6 rounded-2xl bg-red-50 dark:bg-red-950/20 border border-red-100 dark:border-red-900/30 flex items-center gap-3 animate-fade-in">
@@ -362,11 +443,31 @@ const App: React.FC = () => {
              <div className="flex-1 h-px bg-slate-100"></div>
           </div>
           <div className="grid grid-cols-4 gap-6">
-            {[
-              { label: 'Investment Mode', value: `${inputs.mode} (${inputs.frequency})`, color: 'text-indigo-600' },
-              { label: 'Principal Commitment', value: formatCurrency(inputs.investmentAmount), color: 'text-slate-900' },
-              { label: 'Expected CAGR', value: `${inputs.expectedReturn}%`, color: 'text-emerald-600' },
-              { label: 'Strategic Horizon', value: `${inputs.periodYears} Years`, color: 'text-amber-600' }
+            {mode === 'SIP' || mode === 'Lumpsum' ? [
+              { label: 'Investment Mode', value: `${sipInputs.mode} (${sipInputs.frequency})`, color: 'text-indigo-600' },
+              { label: 'Principal Commitment', value: formatCurrency(sipInputs.investmentAmount), color: 'text-slate-900' },
+              { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}%`, color: 'text-emerald-600' },
+              { label: 'Strategic Horizon', value: `${sipInputs.periodYears} Years`, color: 'text-amber-600' }
+            ].map((item, i) => (
+              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
+                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              </div>
+            )) : mode === 'Loan' ? [
+              { label: 'Loan Amount', value: formatCurrency(loanInputs.loanAmount), color: 'text-indigo-600' },
+              { label: 'Monthly EMI', value: formatCurrency((results as LoanResults).monthlyEMI), color: 'text-slate-900' },
+              { label: 'Interest Rate', value: `${loanInputs.interestRate}%`, color: 'text-rose-600' },
+              { label: 'Tenure', value: `${loanInputs.tenureYears} Years`, color: 'text-amber-600' }
+            ].map((item, i) => (
+              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
+                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
+                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              </div>
+            )) : [
+              { label: 'Total Investment', value: formatCurrency(swpInputs.totalInvestment), color: 'text-indigo-600' },
+              { label: 'Monthly Withdrawal', value: formatCurrency(swpInputs.withdrawalAmount), color: 'text-rose-900' },
+              { label: 'Expected Return', value: `${swpInputs.expectedReturn}%`, color: 'text-emerald-600' },
+              { label: 'Period', value: `${swpInputs.periodYears} Years`, color: 'text-amber-600' }
             ].map((item, i) => (
               <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
                 <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
@@ -384,17 +485,41 @@ const App: React.FC = () => {
              </div>
              <div className="space-y-4">
                 <div className="flex justify-between items-center p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                   <p className="font-bold text-slate-600">Projected Total Invested</p>
-                   <p className="text-2xl font-black text-slate-900">{formatCurrency(results.totalInvested)}</p>
+                   <p className="font-bold text-slate-600">
+                     {mode === 'Loan' ? 'Total Principal' : mode === 'SWP' ? 'Total Investment' : 'Projected Total Invested'}
+                   </p>
+                   <p className="text-2xl font-black text-slate-900">
+                     {formatCurrency(
+                       mode === 'Loan' ? loanInputs.loanAmount : 
+                       mode === 'SWP' ? swpInputs.totalInvestment : 
+                       (results as SIPResults).totalInvested
+                     )}
+                   </p>
                 </div>
                 <div className="flex justify-between items-center p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
-                   <p className="font-bold text-slate-600">Estimated Portfolio Yield</p>
-                   <p className="text-2xl font-black text-emerald-700">{formatCurrency(results.estimatedReturns)}</p>
+                   <p className="font-bold text-slate-600">
+                     {mode === 'Loan' ? 'Total Interest' : mode === 'SWP' ? 'Total Withdrawn' : 'Estimated Portfolio Yield'}
+                   </p>
+                   <p className="text-2xl font-black text-emerald-700">
+                     {formatCurrency(
+                       mode === 'Loan' ? (results as LoanResults).totalInterest : 
+                       mode === 'SWP' ? (results as SWPResults).totalWithdrawn : 
+                       (results as SIPResults).estimatedReturns
+                     )}
+                   </p>
                 </div>
                 <div className="flex justify-between items-center p-8 bg-indigo-900 rounded-[2rem] shadow-xl text-white">
                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">Terminal Portfolio Value</p>
-                      <p className="text-3xl font-black">{formatCurrency(results.totalValue)}</p>
+                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">
+                        {mode === 'Loan' ? 'Total Repayment' : mode === 'SWP' ? 'Final Balance' : 'Terminal Portfolio Value'}
+                      </p>
+                      <p className="text-3xl font-black">
+                        {formatCurrency(
+                          mode === 'Loan' ? (results as LoanResults).totalPayment : 
+                          mode === 'SWP' ? (results as SWPResults).finalBalance : 
+                          (results as SIPResults).totalValue
+                        )}
+                      </p>
                    </div>
                    <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
                        <TrendingUp className="h-8 w-8" strokeWidth={3} />
@@ -409,18 +534,31 @@ const App: React.FC = () => {
                 <thead>
                   <tr className="text-left text-slate-400 border-b border-slate-200">
                     <th className="pb-3 font-bold uppercase text-[9px]">Year</th>
-                    <th className="pb-3 font-bold uppercase text-[9px] text-right">Principal</th>
-                    <th className="pb-3 font-bold uppercase text-[9px] text-right">Total Wealth</th>
+                    <th className="pb-3 font-bold uppercase text-[9px] text-right">
+                      {mode === 'Loan' ? 'Principal Paid' : mode === 'SWP' ? 'Withdrawn' : 'Principal'}
+                    </th>
+                    <th className="pb-3 font-bold uppercase text-[9px] text-right">
+                      {mode === 'Loan' ? 'Balance' : mode === 'SWP' ? 'Balance' : 'Total Wealth'}
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {milestones.map((m, idx) => (
-                    <tr key={idx} className="group">
-                      <td className="py-3 font-black text-indigo-600">{m.year}</td>
-                      <td className="py-3 text-right text-slate-500 font-medium">₹{m.invested.toLocaleString('en-IN')}</td>
-                      <td className="py-3 text-right font-bold text-slate-900">₹{m.totalValue.toLocaleString('en-IN')}</td>
-                    </tr>
-                  ))}
+                  {milestones.map((m, idx) => {
+                    const val1 = mode === 'Loan' ? m.principalPaid : mode === 'SWP' ? m.withdrawn : m.invested;
+                    const val2 = mode === 'Loan' ? m.remainingBalance : mode === 'SWP' ? m.balance : m.totalValue;
+                    
+                    return (
+                      <tr key={idx} className="group">
+                        <td className="py-3 font-black text-indigo-600">{m.year}</td>
+                        <td className="py-3 text-right text-slate-500 font-medium">
+                          ₹{(val1 ?? 0).toLocaleString('en-IN')}
+                        </td>
+                        <td className="py-3 text-right font-bold text-slate-900">
+                          ₹{(val2 ?? 0).toLocaleString('en-IN')}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
            </div>
@@ -442,13 +580,24 @@ const App: React.FC = () => {
                  
                  <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
                    <p className="text-sm text-slate-500 dark:text-slate-400">Have more questions about this plan?</p>
-                   <button 
-                     onClick={() => setShowChat(true)}
-                     className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
-                   >
-                     <MessageSquare className="h-4 w-4" />
-                     Ask AI Assistant
-                   </button>
+                   <div className="flex flex-wrap gap-4">
+                     <button 
+                       onClick={() => setShowChat(true)}
+                       className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+                     >
+                       <MessageSquare className="h-4 w-4" />
+                       Ask AI Assistant
+                     </button>
+                     <a 
+                       href={whatsappLink}
+                       target="_blank"
+                       rel="noopener noreferrer"
+                       className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+                     >
+                       <MessageCircle className="h-4 w-4" />
+                       WhatsApp for Info
+                     </a>
+                   </div>
                  </div>
               </div>
            </div>

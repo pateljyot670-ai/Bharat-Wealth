@@ -1,21 +1,40 @@
 import React, { useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid, Sector } from 'recharts';
-import { SIPResults } from '../types';
+import { SIPResults, LoanResults, SWPResults, CalculationMode } from '../types';
 
 interface Props {
-  results: SIPResults;
+  mode: CalculationMode;
+  results: SIPResults | LoanResults | SWPResults;
 }
 
-const ChartsSection: React.FC<Props> = ({ results }) => {
+const ChartsSection: React.FC<Props> = ({ mode, results }) => {
   const [showInvestedLine, setShowInvestedLine] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
-  const pieData = [
-    { name: 'Invested Amount', value: results.totalInvested },
-    { name: 'Estimated Returns', value: results.estimatedReturns },
-  ];
+  const getPieData = () => {
+    if (mode === 'SIP' || mode === 'Lumpsum') {
+      const res = results as SIPResults;
+      return [
+        { name: 'Invested Amount', value: res.totalInvested },
+        { name: 'Estimated Returns', value: res.estimatedReturns },
+      ];
+    } else if (mode === 'Loan') {
+      const res = results as LoanResults;
+      return [
+        { name: 'Principal Amount', value: res.totalPayment - res.totalInterest },
+        { name: 'Total Interest', value: res.totalInterest },
+      ];
+    } else {
+      const res = results as SWPResults;
+      return [
+        { name: 'Total Withdrawn', value: res.totalWithdrawn },
+        { name: 'Final Balance', value: res.finalBalance },
+      ];
+    }
+  };
 
-  const COLORS = ['#6366f1', '#10b981'];
+  const pieData = getPieData();
+  const COLORS = mode === 'Loan' ? ['#6366f1', '#f43f5e'] : ['#6366f1', '#10b981'];
 
   const renderActiveShape = (props: any) => {
     const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill } = props;
@@ -41,7 +60,6 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
     setActiveIndex(index);
   };
 
-
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
@@ -54,7 +72,7 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
                 <span className="text-xs font-medium dark:text-gray-400 text-gray-500">{entry.name}:</span>
               </span>
               <span className="text-sm font-bold dark:text-gray-100 text-gray-900">
-                ₹{entry.value.toLocaleString('en-IN')}
+                ₹{(entry.value ?? 0).toLocaleString('en-IN')}
               </span>
             </div>
           ))}
@@ -64,19 +82,26 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
     return null;
   };
 
+  const getChartData = () => {
+    if (mode === 'SIP' || mode === 'Lumpsum') return (results as SIPResults).yearlyData;
+    if (mode === 'Loan') return (results as LoanResults).amortizationData;
+    return (results as SWPResults).yearlyData;
+  };
+
+  const chartData = getChartData();
+
   return (
     <div className="space-y-6">
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Wealth Distribution (Pie) */}
+        {/* Composition Chart (Pie) */}
         <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
           <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 mb-4 flex items-center gap-2">
-            <span className="w-1 h-4 bg-emerald-500 rounded-full"></span>
-            Wealth Composition
+            <span className={`w-1 h-4 ${mode === 'Loan' ? 'bg-rose-500' : 'bg-emerald-500'} rounded-full`}></span>
+            {mode === 'Loan' ? 'Loan Breakdown' : mode === 'SWP' ? 'SWP Summary' : 'Wealth Composition'}
           </h3>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
-                {/* FIX: The `activeIndex` prop is valid for the Pie component, but the type definitions for recharts might be out of sync. Using @ts-ignore to suppress the error. */}
                 {/* @ts-ignore */}
                 <Pie
                   activeIndex={activeIndex}
@@ -97,48 +122,50 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
+                  formatter={(value: number) => `₹${(value ?? 0).toLocaleString('en-IN')}`}
                 />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </div>
 
-        {/* Growth Projection (Area) */}
+        {/* Projection Chart (Area) */}
         <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
             <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 flex items-center gap-2">
               <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
-              Growth Projection
+              {mode === 'Loan' ? 'Repayment Schedule' : 'Growth Projection'}
             </h3>
             
-            <button 
-              onClick={() => setShowInvestedLine(!showInvestedLine)}
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                showInvestedLine 
-                  ? 'dark:bg-slate-800 dark:text-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700' 
-                  : 'dark:bg-indigo-900/30 dark:text-indigo-400 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-              }`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                {showInvestedLine ? (
-                  <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26a4 4 0 015.493 5.493l-5.493-5.493z" clipRule="evenodd" />
-                ) : (
-                  <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                )}
-                <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3c2.11 0 4.041.665 5.624 1.797l-1.414 1.414A7.963 7.963 0 0010 5C6.333 5 3.393 7.42 2.146 10c.484 1.002 1.144 1.884 1.938 2.606L2.67 14.02A9.978 9.978 0 01.458 10z" clipRule="evenodd" />
-              </svg>
-              {showInvestedLine ? 'Hide Principal' : 'Show Principal'}
-            </button>
+            {(mode === 'SIP' || mode === 'Lumpsum') && (
+              <button 
+                onClick={() => setShowInvestedLine(!showInvestedLine)}
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  showInvestedLine 
+                    ? 'dark:bg-slate-800 dark:text-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700' 
+                    : 'dark:bg-indigo-900/30 dark:text-indigo-400 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
+                }`}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
+                  {showInvestedLine ? (
+                    <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26a4 4 0 015.493 5.493l-5.493-5.493z" clipRule="evenodd" />
+                  ) : (
+                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
+                  )}
+                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3c2.11 0 4.041.665 5.624 1.797l-1.414 1.414A7.963 7.963 0 0010 5C6.333 5 3.393 7.42 2.146 10c.484 1.002 1.144 1.884 1.938 2.606L2.67 14.02A9.978 9.978 0 01.458 10z" clipRule="evenodd" />
+                </svg>
+                {showInvestedLine ? 'Hide Principal' : 'Show Principal'}
+              </button>
+            )}
           </div>
           
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={results.yearlyData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                    <stop offset="5%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0}/>
                   </linearGradient>
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.08} />
@@ -163,30 +190,30 @@ const ChartsSection: React.FC<Props> = ({ results }) => {
                 <Tooltip content={<CustomTooltip />} />
                 <Area 
                   type="monotone" 
-                  dataKey="totalValue" 
-                  stroke="#6366f1" 
+                  dataKey={mode === 'Loan' ? 'balance' : 'totalValue'} 
+                  stroke={mode === 'Loan' ? '#f43f5e' : '#6366f1'} 
                   strokeWidth={3} 
                   fillOpacity={1} 
                   fill="url(#colorValue)" 
-                  name="Total Wealth"
+                  name={mode === 'Loan' ? 'Outstanding Balance' : 'Total Wealth'}
                   activeDot={{ r: 6, stroke: 'var(--card-bg, #fff)', strokeWidth: 2 }}
                   animationDuration={1500}
-                  // FIX: `animationTimingFunction` is not a valid prop for Area. Use `animationEasing` instead.
                   animationEasing="ease-in-out"
                 />
-                <Area 
-                  type="monotone" 
-                  dataKey="invested" 
-                  stroke="#6b7280" 
-                  strokeWidth={2} 
-                  fillOpacity={0} 
-                  name="Invested Amount"
-                  hide={!showInvestedLine}
-                  activeDot={{ r: 4, stroke: 'var(--card-bg, #fff)', strokeWidth: 2 }}
-                  animationDuration={1000}
-                  // FIX: `animationTimingFunction` is not a valid prop for Area. Use `animationEasing` instead.
-                  animationEasing="ease-in-out"
-                />
+                {(mode === 'SIP' || mode === 'Lumpsum') && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="invested" 
+                    stroke="#6b7280" 
+                    strokeWidth={2} 
+                    fillOpacity={0} 
+                    name="Invested Amount"
+                    hide={!showInvestedLine}
+                    activeDot={{ r: 4, stroke: 'var(--card-bg, #fff)', strokeWidth: 2 }}
+                    animationDuration={1000}
+                    animationEasing="ease-in-out"
+                  />
+                )}
               </AreaChart>
             </ResponsiveContainer>
           </div>

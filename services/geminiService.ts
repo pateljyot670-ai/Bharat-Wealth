@@ -1,12 +1,11 @@
 
 import { GoogleGenAI, Type } from "@google/genai";
-import { SIPInputs, SIPResults, AIInsight } from "../types";
+import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode } from "../types";
 
 export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResults): Promise<AIInsight | null> => {
   let apiKey: string | undefined;
   
   try {
-    // Attempt to access process.env safely
     apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
   } catch (e) {
     console.warn("Could not access process.env directly:", e);
@@ -76,14 +75,13 @@ export const getFinancialInsights = async (inputs: SIPInputs, results: SIPResult
       if (error.message?.includes("API_KEY_INVALID")) {
         throw new Error("Invalid API Key. Please check your Gemini API configuration.");
       }
-      // Wait a bit before retrying
       if (attempt < 2) await new Promise(resolve => setTimeout(resolve, 1000));
     }
   }
   throw lastError;
 };
 
-export const chatWithAI = async (message: string, context: { inputs: SIPInputs, results: SIPResults }): Promise<string> => {
+export const chatWithAI = async (message: string, context: { mode: CalculationMode, inputs: any, results: any }): Promise<string> => {
   let apiKey: string | undefined;
   try {
     apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
@@ -96,21 +94,52 @@ export const chatWithAI = async (message: string, context: { inputs: SIPInputs, 
   }
 
   const ai = new GoogleGenAI({ apiKey });
-  const { inputs, results } = context;
-  const frequencyText = inputs.mode === 'SIP' ? `${inputs.frequency} SIP` : 'One-time Lumpsum';
+  const { mode, inputs, results } = context;
+
+  let planDetails = '';
+  if (mode === 'SIP' || mode === 'Lumpsum') {
+    const sip = inputs as SIPInputs;
+    const res = results as SIPResults;
+    planDetails = `
+      - Type: ${sip.mode === 'SIP' ? `${sip.frequency} SIP` : 'Lumpsum'}
+      - Amount: ₹${sip.investmentAmount.toLocaleString('en-IN')}
+      - Expected Return: ${sip.expectedReturn}% p.a.
+      - Horizon: ${sip.periodYears} years
+      - Estimated Final Value: ₹${res.totalValue.toLocaleString('en-IN')}
+      - Total Invested: ₹${res.totalInvested.toLocaleString('en-IN')}
+    `;
+  } else if (mode === 'Loan') {
+    const loan = inputs as LoanInputs;
+    const res = results as LoanResults;
+    planDetails = `
+      - Type: Loan EMI
+      - Loan Amount: ₹${loan.loanAmount.toLocaleString('en-IN')}
+      - Interest Rate: ${loan.interestRate}% p.a.
+      - Tenure: ${loan.tenureYears} years
+      - Monthly EMI: ₹${res.monthlyEMI.toLocaleString('en-IN')}
+      - Total Interest: ₹${res.totalInterest.toLocaleString('en-IN')}
+      - Total Payment: ₹${res.totalPayment.toLocaleString('en-IN')}
+    `;
+  } else if (mode === 'SWP') {
+    const swp = inputs as SWPInputs;
+    const res = results as SWPResults;
+    planDetails = `
+      - Type: Systematic Withdrawal Plan (SWP)
+      - Total Investment: ₹${swp.totalInvestment.toLocaleString('en-IN')}
+      - Monthly Withdrawal: ₹${swp.withdrawalAmount.toLocaleString('en-IN')}
+      - Expected Return: ${swp.expectedReturn}% p.a.
+      - Period: ${swp.periodYears} years
+      - Total Withdrawn: ₹${res.totalWithdrawn.toLocaleString('en-IN')}
+      - Final Balance: ₹${res.finalBalance.toLocaleString('en-IN')}
+    `;
+  }
 
   const systemPrompt = `
     You are Bharat Wealth AI, a friendly and professional financial advisor for Indian investors.
-    The user is currently looking at this investment plan:
-    - Type: ${frequencyText}
-    - Amount: ₹${inputs.investmentAmount.toLocaleString('en-IN')}
-    - Expected Return: ${inputs.expectedReturn}% p.a.
-    - Horizon: ${inputs.periodYears} years
-    - Estimated Final Value: ₹${results.totalValue.toLocaleString('en-IN')}
-    - Total Invested: ₹${results.totalInvested.toLocaleString('en-IN')}
-    - Wealth Gained: ₹${results.estimatedReturns.toLocaleString('en-IN')}
+    The user is currently looking at this ${mode} plan:
+    ${planDetails}
 
-    Answer the user's questions about this plan or general financial topics (SIP, Lumpsum, Mutual Funds, Inflation, Taxation in India).
+    Answer the user's questions about this plan or general financial topics (SIP, Lumpsum, Loan EMI, SWP, Mutual Funds, Inflation, Taxation in India).
     Keep responses concise, helpful, and easy to understand. Use emojis where appropriate.
     Always clarify that you provide information, not certified financial advice.
   `;

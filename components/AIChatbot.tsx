@@ -2,7 +2,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { MessageSquare, X, Send, Bot, Loader2, Minimize2, Maximize2, RefreshCw } from 'lucide-react';
 import { chatWithAI } from '../services/geminiService';
-import { SIPInputs, SIPResults } from '../types';
+import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, CalculationMode } from '../types';
 
 interface Message {
   role: 'user' | 'ai';
@@ -11,18 +11,24 @@ interface Message {
 }
 
 interface AIChatbotProps {
-  inputs: SIPInputs;
-  results: SIPResults;
+  mode: CalculationMode;
+  sipInputs: SIPInputs;
+  loanInputs: LoanInputs;
+  swpInputs: SWPInputs;
+  results: SIPResults | LoanResults | SWPResults;
   darkMode: boolean;
   isOpen: boolean;
   setIsOpen: (isOpen: boolean) => void;
 }
 
-const AIChatbot: React.FC<AIChatbotProps> = ({ inputs, results, darkMode, isOpen, setIsOpen }) => {
+const AIChatbot: React.FC<AIChatbotProps> = ({ 
+  mode, sipInputs, loanInputs, swpInputs, results, 
+  darkMode, isOpen, setIsOpen 
+}) => {
   const [isMinimized, setIsMinimized] = useState(false);
   const initialMessage: Message = {
     role: 'ai',
-    text: "Namaste! I'm Bharat Wealth AI. How can I help you with your investment plan today?",
+    text: `Namaste! I'm Bharat Wealth AI. How can I help you with your ${mode} plan today?`,
     timestamp: new Date(),
   };
   const [messages, setMessages] = useState<Message[]>([initialMessage]);
@@ -64,7 +70,12 @@ const AIChatbot: React.FC<AIChatbotProps> = ({ inputs, results, darkMode, isOpen
     setIsLoading(true);
 
     try {
-      const response = await chatWithAI(input, { inputs, results });
+      const context = {
+        mode,
+        inputs: mode === 'SIP' || mode === 'Lumpsum' ? sipInputs : mode === 'Loan' ? loanInputs : swpInputs,
+        results
+      };
+      const response = await chatWithAI(input, context);
       const aiMessage: Message = {
         role: 'ai',
         text: response,
