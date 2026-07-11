@@ -2,14 +2,24 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode } from "../types";
 
- export const getFinancialInsights = async (inputs: SIPInputs | LoanInputs | SWPInputs, results: SIPResults | LoanResults | SWPResults): Promise<AIInsight | null> => {
-  let apiKey: string | undefined;
-  
+const getApiKey = (): string | undefined => {
   try {
-    apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
-  } catch (e) {
-    console.warn("Could not access process.env directly:", e);
-  }
+    const key = process.env.GEMINI_API_KEY;
+    if (key && key !== "undefined" && key !== "null" && key !== "") {
+      return key;
+    }
+  } catch (e) {}
+  try {
+    const key = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+    if (key && key !== "undefined" && key !== "null" && key !== "") {
+      return key;
+    }
+  } catch (e) {}
+  return undefined;
+};
+
+ export const getFinancialInsights = async (inputs: SIPInputs | LoanInputs | SWPInputs, results: SIPResults | LoanResults | SWPResults): Promise<AIInsight | null> => {
+  const apiKey = getApiKey();
   
   if (!apiKey) {
     console.error("GEMINI_API_KEY is not defined in the environment.");
@@ -73,7 +83,7 @@ import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, 
   for (let attempt = 1; attempt <= 2; attempt++) {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3-flash-preview',
+        model: 'gemini-3.5-flash',
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           systemInstruction: "You are a professional financial advisor specializing in the Indian market. Provide structured, actionable investment insights in JSON format.",
@@ -119,12 +129,7 @@ import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, 
 };
 
 export const chatWithAI = async (message: string, context: { mode: CalculationMode, inputs: any, results: any }): Promise<string> => {
-  let apiKey: string | undefined;
-  try {
-    apiKey = typeof process !== 'undefined' ? process.env.GEMINI_API_KEY : undefined;
-  } catch (e) {
-    console.warn("Could not access process.env directly:", e);
-  }
+  const apiKey = getApiKey();
   
   if (!apiKey) {
     throw new Error("AI Service is currently unavailable.");
@@ -183,7 +188,7 @@ export const chatWithAI = async (message: string, context: { mode: CalculationMo
 
   try {
     const response = await ai.models.generateContent({
-      model: 'gemini-3-flash-preview',
+      model: 'gemini-3.5-flash',
       contents: [{ parts: [{ text: message }] }],
       config: {
         systemInstruction: systemPrompt,

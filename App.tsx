@@ -120,7 +120,7 @@ const App: React.FC = () => {
         useCORS: true,
         logging: false,
         backgroundColor: '#ffffff',
-        allowTaint: true,
+        allowTaint: false,
         removeContainer: true
       });
       
@@ -175,9 +175,8 @@ const App: React.FC = () => {
   }, [mode, results]);
 
   const whatsappLink = useMemo(() => {
-    const phone = "7698428945";
     const message = encodeURIComponent(`Namaste! I'm interested in the ${mode} plan I just calculated on Bharat Wealth.\n\nDetails:\n${shareText}\n\nCan you provide more information?`);
-    return `https://wa.me/${phone}?text=${message}`;
+    return `https://api.whatsapp.com/send?text=${message}`;
   }, [mode, shareText]);
 
   return (
@@ -358,6 +357,27 @@ const App: React.FC = () => {
 
       {/* Footer Disclaimer */}
       <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200 dark:border-slate-800 screenshot-hide">
+        <div className="mb-10 pb-8 border-b border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Have more questions about this plan?</p>
+          <div className="flex flex-wrap gap-4">
+            <button 
+              onClick={() => setShowChat(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+            >
+              <MessageSquare className="h-4 w-4" />
+              Ask AI Assistant
+            </button>
+            <a 
+              href={whatsappLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+            >
+              <MessageCircle className="h-4 w-4" />
+              WhatsApp for Info
+            </a>
+          </div>
+        </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
           <div className="space-y-4">
             <div className="flex items-center gap-2 opacity-50">
@@ -389,7 +409,7 @@ const App: React.FC = () => {
       <div 
         ref={pdfTemplateRef}
         id="pdf-report-hidden-template"
-        className="screenshot-hide" 
+        className="" 
         style={{ 
           position: 'fixed',
           left: '-9999px',
@@ -402,14 +422,14 @@ const App: React.FC = () => {
           zIndex: -100
         }}
       >
-        <div className="border-b-8 border-indigo-900 pb-12 mb-12 relative overflow-hidden">
-          <div className="absolute top-0 right-0 opacity-5 -mr-20 -mt-20">
-             <div className="w-96 h-96 border-[40px] border-indigo-900 rounded-full"></div>
+        <div style={{ borderBottom: '8px solid #1e1b4b', paddingBottom: '3rem', marginBottom: '3rem', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: 0, right: 0, opacity: 0.05, marginRight: '-5rem', marginTop: '-5rem' }}>
+             <div style={{ width: '24rem', height: '24rem', border: '40px solid #1e1b4b', borderRadius: '9999px' }}></div>
           </div>
-          <div className="flex justify-between items-start relative z-10">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 10 }}>
             <div>
-              <div className="flex items-center gap-4 mb-6">
-                <div className="w-16 h-16 relative">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <div style={{ width: '4rem', height: '4rem', position: 'relative' }}>
                   <svg viewBox="0 0 100 100" className="w-full h-full">
                     <defs>
                       <linearGradient id="pdfLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -422,74 +442,74 @@ const App: React.FC = () => {
                   </svg>
                 </div>
                 <div>
-                   <h2 className="text-3xl font-black tracking-tighter uppercase text-indigo-950">Bharat Wealth</h2>
+                    <h2 style={{ fontSize: '1.875rem', lineHeight: '2.25rem', fontWeight: 900, letterSpacing: '-0.05em', textTransform: 'uppercase', color: '#1e1b4b' }}>Bharat Wealth</h2>
                 </div>
               </div>
-              <h1 className="text-5xl font-extrabold text-slate-900">Portfolio Growth <br/><span className="text-indigo-600">Projections</span></h1>
+              <h1 style={{ fontSize: '3rem', lineHeight: '1', fontWeight: 800, color: '#0f172a' }}>Portfolio Growth <br/><span style={{ color: '#4f46e5' }}>Projections</span></h1>
             </div>
-            <div className="text-right">
-               <div className="bg-slate-100 px-4 py-2 rounded-lg inline-block mb-4">
-                  <p className="text-[10px] font-black uppercase tracking-widest text-slate-500">Document No.</p>
-                  <p className="font-mono text-sm font-bold text-slate-800 uppercase">BW-{new Date().getFullYear()}-{Math.floor(Math.random()*10000)}</p>
+            <div style={{ textAlign: 'right' }}>
+               <div style={{ backgroundColor: '#f1f5f9', paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', borderRadius: '0.5rem', display: 'inline-block', marginBottom: '1rem' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b' }}>Document No.</p>
+                  <p style={{ fontFamily: 'monospace', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 700, color: '#1e293b', textTransform: 'uppercase' }}>BW-{new Date().getFullYear()}-{Math.floor(Math.random()*10000)}</p>
                </div>
-               <p className="text-sm font-medium text-slate-500">Issue Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
-               <p className="text-xs text-indigo-500 font-black mt-2 uppercase tracking-widest">Confidential Report</p>
+               <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: '#64748b' }}>Issue Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
+               <p style={{ fontSize: '0.75rem', lineHeight: '1rem', color: '#6366f1', fontWeight: 900, marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidential Report</p>
             </div>
           </div>
         </div>
 
-        <div className="mb-12">
-          <div className="flex items-center gap-4 mb-6">
-             <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">I. Executive Summary</h3>
-             <div className="flex-1 h-px bg-slate-100"></div>
+        <div style={{ marginBottom: '3rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+             <h3 style={{ fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#94a3b8' }}>I. Executive Summary</h3>
+             <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
           </div>
-          <div className="grid grid-cols-4 gap-6">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1.5rem' }}>
             {mode === 'SIP' || mode === 'Lumpsum' ? [
-              { label: 'Investment Mode', value: `${sipInputs.mode} (${sipInputs.frequency})`, color: 'text-indigo-600' },
-              { label: 'Principal Commitment', value: formatCurrency(sipInputs.investmentAmount), color: 'text-slate-900' },
-              { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}%`, color: 'text-emerald-600' },
-              { label: 'Strategic Horizon', value: `${sipInputs.periodYears} Years`, color: 'text-amber-600' }
+              { label: 'Investment Mode', value: `${sipInputs.mode} (${sipInputs.frequency})`, color: '#4f46e5' },
+              { label: 'Principal Commitment', value: formatCurrency(sipInputs.investmentAmount), color: '#0f172a' },
+              { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}%`, color: '#059669' },
+              { label: 'Strategic Horizon', value: `${sipInputs.periodYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
-                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
+                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             )) : mode === 'Loan' ? [
-              { label: 'Loan Amount', value: formatCurrency(loanInputs.loanAmount), color: 'text-indigo-600' },
-              { label: 'Monthly EMI', value: formatCurrency((results as LoanResults).monthlyEMI), color: 'text-slate-900' },
-              { label: 'Interest Rate', value: `${loanInputs.interestRate}%`, color: 'text-rose-600' },
-              { label: 'Tenure', value: `${loanInputs.tenureYears} Years`, color: 'text-amber-600' }
+              { label: 'Loan Amount', value: formatCurrency(loanInputs.loanAmount), color: '#4f46e5' },
+              { label: 'Monthly EMI', value: formatCurrency((results as LoanResults).monthlyEMI), color: '#0f172a' },
+              { label: 'Interest Rate', value: `${loanInputs.interestRate}%`, color: '#e11d48' },
+              { label: 'Tenure', value: `${loanInputs.tenureYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
-                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
+                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             )) : [
-              { label: 'Total Investment', value: formatCurrency(swpInputs.totalInvestment), color: 'text-indigo-600' },
-              { label: 'Monthly Withdrawal', value: formatCurrency(swpInputs.withdrawalAmount), color: 'text-rose-900' },
-              { label: 'Expected Return', value: `${swpInputs.expectedReturn}%`, color: 'text-emerald-600' },
-              { label: 'Period', value: `${swpInputs.periodYears} Years`, color: 'text-amber-600' }
+              { label: 'Total Investment', value: formatCurrency(swpInputs.totalInvestment), color: '#4f46e5' },
+              { label: 'Monthly Withdrawal', value: formatCurrency(swpInputs.withdrawalAmount), color: '#4c0519' },
+              { label: 'Expected Return', value: `${swpInputs.expectedReturn}%`, color: '#059669' },
+              { label: 'Period', value: `${swpInputs.periodYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} className="bg-slate-50 p-6 rounded-2xl border border-slate-100">
-                <p className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-2">{item.label}</p>
-                <p className={`text-xl font-black ${item.color}`}>{item.value}</p>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
+                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             ))}
           </div>
         </div>
 
-        <div className="mb-12 grid grid-cols-12 gap-8 items-center">
-           <div className="col-span-7">
-             <div className="flex items-center gap-4 mb-6">
-                <h3 className="text-xs font-black uppercase tracking-[0.3em] text-slate-400">II. Wealth Forecast</h3>
-                <div className="flex-1 h-px bg-slate-100"></div>
+        <div style={{ marginBottom: '3rem', display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: '2rem', alignItems: 'center' }}>
+           <div style={{ gridColumn: 'span 7 / span 7' }}>
+             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
+                <h3 style={{ fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#94a3b8' }}>II. Wealth Forecast</h3>
+                <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
              </div>
-             <div className="space-y-4">
-                <div className="flex justify-between items-center p-6 bg-indigo-50 rounded-2xl border border-indigo-100">
-                   <p className="font-bold text-slate-600">
+             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', backgroundColor: '#eef2ff', borderRadius: '1rem', border: '1px solid #e0e7ff' }}>
+                   <p style={{ fontWeight: 700, color: '#475569' }}>
                      {mode === 'Loan' ? 'Total Principal' : mode === 'SWP' ? 'Total Investment' : 'Projected Total Invested'}
                    </p>
-                   <p className="text-2xl font-black text-slate-900">
+                   <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#0f172a' }}>
                      {formatCurrency(
                        mode === 'Loan' ? loanInputs.loanAmount : 
                        mode === 'SWP' ? swpInputs.totalInvestment : 
@@ -497,11 +517,11 @@ const App: React.FC = () => {
                      )}
                    </p>
                 </div>
-                <div className="flex justify-between items-center p-6 bg-emerald-50 rounded-2xl border border-emerald-100">
-                   <p className="font-bold text-slate-600">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', backgroundColor: '#ecfdf5', borderRadius: '1rem', border: '1px solid #d1fae5' }}>
+                   <p style={{ fontWeight: 700, color: '#475569' }}>
                      {mode === 'Loan' ? 'Total Interest' : mode === 'SWP' ? 'Total Withdrawn' : 'Estimated Portfolio Yield'}
                    </p>
-                   <p className="text-2xl font-black text-emerald-700">
+                   <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#047857' }}>
                      {formatCurrency(
                        mode === 'Loan' ? (results as LoanResults).totalInterest : 
                        mode === 'SWP' ? (results as SWPResults).totalWithdrawn : 
@@ -509,12 +529,12 @@ const App: React.FC = () => {
                      )}
                    </p>
                 </div>
-                <div className="flex justify-between items-center p-8 bg-indigo-900 rounded-[2rem] shadow-xl text-white">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2rem', backgroundColor: '#1e1b4b', borderRadius: '2rem', color: '#ffffff' }}>
                    <div>
-                      <p className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-1">
+                      <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, marginBottom: '0.25rem' }}>
                         {mode === 'Loan' ? 'Total Repayment' : mode === 'SWP' ? 'Final Balance' : 'Terminal Portfolio Value'}
                       </p>
-                      <p className="text-3xl font-black">
+                      <p style={{ fontSize: '1.875rem', lineHeight: '2.25rem', fontWeight: 900 }}>
                         {formatCurrency(
                           mode === 'Loan' ? (results as LoanResults).totalPayment : 
                           mode === 'SWP' ? (results as SWPResults).finalBalance : 
@@ -522,39 +542,39 @@ const App: React.FC = () => {
                         )}
                       </p>
                    </div>
-                   <div className="w-16 h-16 rounded-full flex items-center justify-center" style={{ backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+                   <div style={{ width: '4rem', height: '4rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
                        <TrendingUp className="h-8 w-8" strokeWidth={3} />
                    </div>
                 </div>
              </div>
            </div>
            
-           <div className="col-span-5 bg-slate-50 p-8 rounded-3xl border border-slate-100 h-full flex flex-col justify-center">
-              <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-400 mb-6 text-center">Growth Milestones</h4>
-              <table className="w-full text-sm">
+           <div style={{ gridColumn: 'span 5 / span 5', backgroundColor: '#f8fafc', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+              <h4 style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '1.5rem', textAlign: 'center' }}>Growth Milestones</h4>
+              <table style={{ width: '100%', fontSize: '0.875rem', lineHeight: '1.25rem' }}>
                 <thead>
-                  <tr className="text-left text-slate-400 border-b border-slate-200">
-                    <th className="pb-3 font-bold uppercase text-[9px]">Year</th>
-                    <th className="pb-3 font-bold uppercase text-[9px] text-right">
+                  <tr style={{ textAlign: 'left', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
+                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px' }}>Year</th>
+                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px', textAlign: 'right' }}>
                       {mode === 'Loan' ? 'Principal Paid' : mode === 'SWP' ? 'Withdrawn' : 'Principal'}
                     </th>
-                    <th className="pb-3 font-bold uppercase text-[9px] text-right">
+                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px', textAlign: 'right' }}>
                       {mode === 'Loan' ? 'Balance' : mode === 'SWP' ? 'Balance' : 'Total Wealth'}
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody style={{ borderCollapse: 'collapse' }}>
                   {milestones.map((m, idx) => {
                     const val1 = mode === 'Loan' ? m.principalPaid : mode === 'SWP' ? m.withdrawn : m.invested;
                     const val2 = mode === 'Loan' ? m.remainingBalance : mode === 'SWP' ? m.balance : m.totalValue;
                     
                     return (
-                      <tr key={idx} className="group">
-                        <td className="py-3 font-black text-indigo-600">{m.year}</td>
-                        <td className="py-3 text-right text-slate-500 font-medium">
+                      <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', fontWeight: 900, color: '#4f46e5' }}>{m.year}</td>
+                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', textAlign: 'right', color: '#64748b', fontWeight: 500 }}>
                           ₹{(val1 ?? 0).toLocaleString('en-IN')}
                         </td>
-                        <td className="py-3 text-right font-bold text-slate-900">
+                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
                           ₹{(val2 ?? 0).toLocaleString('en-IN')}
                         </td>
                       </tr>
@@ -565,40 +585,18 @@ const App: React.FC = () => {
            </div>
         </div>
 
-        <div className="mt-auto pt-12 border-t border-slate-100 flex justify-between items-end opacity-40">
-           <div className="max-w-md">
-              <p className="text-[8px] font-bold uppercase tracking-widest leading-relaxed">
+        <div style={{ marginTop: 'auto', paddingTop: '3rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', opacity: 0.4 }}>
+           <div style={{ maxWidth: '28rem' }}>
+              <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: '1.625' }}>
                 Legal Disclaimer: This projection is generated using mathematical estimates. Past performance is not indicative of future returns. Bharat Wealth acts as a strategic simulation tool and does not provide regulated financial advice. Portfolio results are subject to market volatility.
               </p>
            </div>
-           <div className="text-right flex flex-col items-end">
-              <div className="mb-2">
-                 <p className="text-[8px] font-black uppercase tracking-widest mb-1">Authenticated By</p>
-                 <div className="w-24 h-8 bg-slate-100 rounded flex items-center justify-center border-2 border-slate-200 gap-1">
-                    <CheckCircle2 className="h-3 w-3 text-slate-400" strokeWidth={3} />
-                    <span className="text-[9px] font-black italic text-slate-400">VERIFIED</span>
-                 </div>
-                 
-                 <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-                   <p className="text-sm text-slate-500 dark:text-slate-400">Have more questions about this plan?</p>
-                   <div className="flex flex-wrap gap-4">
-                     <button 
-                       onClick={() => setShowChat(true)}
-                       className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
-                     >
-                       <MessageSquare className="h-4 w-4" />
-                       Ask AI Assistant
-                     </button>
-                     <a 
-                       href={whatsappLink}
-                       target="_blank"
-                       rel="noopener noreferrer"
-                       className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
-                     >
-                       <MessageCircle className="h-4 w-4" />
-                       WhatsApp for Info
-                     </a>
-                   </div>
+           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
+              <div style={{ marginBottom: '0.5rem' }}>
+                 <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem', color: '#000000' }}>Authenticated By</p>
+                 <div style={{ width: '6rem', height: '2rem', backgroundColor: '#f1f5f9', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', justify: 'center', border: '2px solid #e2e8f0', gap: '0.25rem' }}>
+                    <CheckCircle2 style={{ height: '0.75rem', width: '0.75rem', color: '#94a3b8' }} strokeWidth={3} />
+                    <span style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8' }}>VERIFIED</span>
                  </div>
               </div>
            </div>
