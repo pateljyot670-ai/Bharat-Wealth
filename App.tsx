@@ -150,15 +150,75 @@ const App: React.FC = () => {
       const res = results as SIPResults;
       const amount = formatCurrency(sipInputs.investmentAmount);
       const total = formatCurrency(res.totalValue);
+      const invested = formatCurrency(res.totalInvested);
+      const returns = formatCurrency(res.estimatedReturns);
       const years = sipInputs.periodYears;
+      const rate = sipInputs.expectedReturn;
       const m = sipInputs.mode === 'SIP' ? `${sipInputs.frequency} SIP` : 'Lumpsum';
-      return `I just projected my wealth growth with Bharat Wealth! 🚀\n\n💰 ${m}: ${amount}\n⏳ Period: ${years} Years\n📈 Estimated Value: ${total}\n\nPlan your financial future too!`;
+      
+      return `🌟 *BHARAT WEALTH - INVESTMENT REPORT* 🌟
+------------------------------------------
+Namaste! I just calculated my wealth growth plan on Bharat Wealth! 🇮🇳
+
+📊 *Plan Type*: ${m}
+💰 *Principal Amount*: ${amount}
+⏳ *Strategic Horizon*: ${years} Years
+📈 *Expected CAGR*: ${rate}%
+
+🏆 *ESTIMATED FUTURE WEALTH* 🏆
+✨ *Total Amount Invested*: ${invested}
+✨ *Estimated Wealth Gained*: ${returns}
+✨ *Terminal Portfolio Value*: ${total}
+
+*Past performance is indicative, not guaranteed. Simulation by Bharat Wealth.*`;
     } else if (mode === 'Loan') {
       const res = results as LoanResults;
-      return `I just calculated my Loan EMI with Bharat Wealth! 🏠\n\n💰 Loan: ${formatCurrency(loanInputs.loanAmount)}\n📉 EMI: ${formatCurrency(res.monthlyEMI)}\n⏳ Tenure: ${loanInputs.tenureYears} Years\n\nCalculate yours now!`;
+      const loanAmt = formatCurrency(loanInputs.loanAmount);
+      const emi = formatCurrency(res.monthlyEMI);
+      const totalInterest = formatCurrency(res.totalInterest);
+      const totalPayment = formatCurrency(res.totalPayment);
+      const years = loanInputs.tenureYears;
+      const rate = loanInputs.interestRate;
+      
+      return `🌟 *BHARAT WEALTH - LOAN EMI REPORT* 🌟
+------------------------------------------
+Namaste! I just analyzed my loan repayment schedule on Bharat Wealth! 🇮🇳
+
+📊 *Plan Type*: Loan EMI Calculation
+💰 *Loan Principal Amount*: ${loanAmt}
+⏳ *Tenure / Period*: ${years} Years
+📈 *Annual Interest Rate*: ${rate}%
+
+🏆 *REPAYMENT SUMMARY* 🏆
+✨ *Monthly EMI Payable*: ${emi}
+✨ *Total Interest Payable*: ${totalInterest}
+✨ *Total Repayment Amount*: ${totalPayment}
+
+*Always consult a registered financial advisor before taking credit.*`;
     } else {
       const res = results as SWPResults;
-      return `I just planned my retirement income with SWP on Bharat Wealth! 🏖️\n\n💰 Investment: ${formatCurrency(swpInputs.totalInvestment)}\n💵 Monthly Withdrawal: ${formatCurrency(swpInputs.withdrawalAmount)}\n📉 Final Balance: ${formatCurrency(res.finalBalance)}\n\nPlan your retirement too!`;
+      const initialAmt = formatCurrency(swpInputs.totalInvestment);
+      const withdrawAmt = formatCurrency(swpInputs.withdrawalAmount);
+      const totalWithdrawn = formatCurrency(res.totalWithdrawn);
+      const finalBal = formatCurrency(res.finalBalance);
+      const years = swpInputs.periodYears;
+      const rate = swpInputs.expectedReturn;
+      
+      return `🌟 *BHARAT WEALTH - SWP RETIREMENT PLAN* 🌟
+------------------------------------------
+Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖️🇮🇳
+
+📊 *Plan Type*: SWP (Systematic Withdrawal)
+💰 *Initial Lump Sum Investment*: ${initialAmt}
+💵 *Target Monthly Income*: ${withdrawAmt}
+⏳ *Retirement Horizon*: ${years} Years
+📈 *Expected Annual Return*: ${rate}%
+
+🏆 *ESTIMATED MATURITY BENEFITS* 🏆
+✨ *Total Amount Withdrawn*: ${totalWithdrawn}
+✨ *Terminal Portfolio Balance*: ${finalBal}
+
+*Plan your second innings beautifully with Bharat Wealth.*`;
     }
   }, [mode, sipInputs, loanInputs, swpInputs, results]);
 
@@ -174,10 +234,49 @@ const App: React.FC = () => {
     return Array.from(new Set(filtered.map(d => d.year))).map(y => data.find(d => d.year === y)!);
   }, [mode, results]);
 
-  const whatsappLink = useMemo(() => {
-    const message = encodeURIComponent(`Namaste! I'm interested in the ${mode} plan I just calculated on Bharat Wealth.\n\nDetails:\n${shareText}\n\nCan you provide more information?`);
-    return `https://api.whatsapp.com/send?text=${message}`;
-  }, [mode, shareText]);
+  const handleWhatsAppShare = async (isSupportChat: boolean = false) => {
+    const baseUrl = window.location.origin;
+    const textToShare = isSupportChat 
+      ? `Namaste! I'm interested in the ${mode} plan I just calculated on Bharat Wealth.\n\nDetails:\n${shareText}\n\nCan you provide more information?`
+      : `${shareText}\n\n👉 Plan your financial future too: ${baseUrl}`;
+
+    // 1. Try Navigator Share API if on mobile device (best for APK, supports native Android share panel which opens WhatsApp)
+    if (!isSupportChat && navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Bharat Wealth Growth Projections',
+          text: textToShare,
+          url: baseUrl
+        });
+        return; // Success! Native share sheet handled it
+      } catch (err) {
+        console.log('Navigator share failed or cancelled, falling back to direct WhatsApp link.', err);
+      }
+    }
+
+    // 2. Fallback to direct WhatsApp Link
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const encodedText = encodeURIComponent(textToShare);
+    
+    // On mobile devices (and inside Android APK webviews), "whatsapp://send?text=" is the most reliable way 
+    // to open the WhatsApp app directly. On desktop, api.whatsapp.com is best.
+    const whatsappUrl = isMobile 
+      ? `whatsapp://send?text=${encodedText}` 
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    try {
+      if (isMobile) {
+        // Use window.location instead of window.open inside mobile APK webviews to prevent opening blank windows
+        window.location.href = whatsappUrl;
+      } else {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('Failed to launch WhatsApp URL scheme:', err);
+      // Absolute fallback
+      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank', 'noopener,noreferrer');
+    }
+  };
 
   return (
     <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-white text-slate-900'} pb-24`}>
@@ -196,11 +295,9 @@ const App: React.FC = () => {
       />
 
       {/* Floating WhatsApp Button */}
-      <a
-        href={whatsappLink}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-24 right-6 p-4 bg-[#25D366] text-white rounded-full shadow-2xl hover:bg-[#128C7E] transition-all transform hover:scale-110 z-50 flex items-center gap-2 group screenshot-hide"
+      <button
+        onClick={() => handleWhatsAppShare(true)}
+        className="fixed bottom-24 right-6 p-4 bg-[#25D366] text-white rounded-full shadow-2xl hover:bg-[#128C7E] transition-all transform hover:scale-110 z-50 flex items-center gap-2 group screenshot-hide cursor-pointer border-none outline-none"
         aria-label="Chat on WhatsApp"
       >
         <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
@@ -209,7 +306,7 @@ const App: React.FC = () => {
         <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap">
           WhatsApp Us
         </span>
-      </a>
+      </button>
       
       {/* APP HEADER */}
       <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
@@ -367,15 +464,13 @@ const App: React.FC = () => {
               <MessageSquare className="h-4 w-4" />
               Ask AI Assistant
             </button>
-            <a 
-              href={whatsappLink}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20"
+            <button 
+              onClick={() => handleWhatsAppShare(true)}
+              className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 cursor-pointer border-none outline-none"
             >
               <MessageCircle className="h-4 w-4" />
               WhatsApp for Info
-            </a>
+            </button>
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">

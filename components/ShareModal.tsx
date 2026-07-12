@@ -38,9 +38,45 @@ const ShareModal: React.FC<Props> = ({ onClose, shareText, appUrl }) => {
     window.open(facebookUrl, '_blank', 'noopener,noreferrer');
   };
 
-  const shareOnWhatsApp = () => {
-    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodedShareText}`;
-    window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+  const shareOnWhatsApp = async () => {
+    const textToShare = `${shareText}\n\n👉 Try Bharat Wealth now: ${appUrl}`;
+
+    // 1. Try Navigator Share API if on mobile device (best for APK, supports native Android share panel which opens WhatsApp)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'Bharat Wealth Report',
+          text: textToShare,
+          url: appUrl
+        });
+        return; // Success!
+      } catch (err) {
+        console.log('Navigator share failed or cancelled, falling back to direct WhatsApp link.', err);
+      }
+    }
+
+    // 2. Fallback to direct WhatsApp Link
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    const encodedText = encodeURIComponent(textToShare);
+    
+    // On mobile devices (and inside Android APK webviews), "whatsapp://send?text=" is the most reliable way 
+    // to open the WhatsApp app directly. On desktop, api.whatsapp.com is best.
+    const whatsappUrl = isMobile 
+      ? `whatsapp://send?text=${encodedText}` 
+      : `https://api.whatsapp.com/send?text=${encodedText}`;
+
+    try {
+      if (isMobile) {
+        // Use window.location instead of window.open inside mobile APK webviews to prevent opening blank windows
+        window.location.href = whatsappUrl;
+      } else {
+        window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
+      }
+    } catch (err) {
+      console.error('Failed to launch WhatsApp URL scheme:', err);
+      // Absolute fallback
+      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank', 'noopener,noreferrer');
+    }
   };
 
   const copyToClipboard = async () => {
