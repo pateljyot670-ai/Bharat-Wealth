@@ -9,6 +9,7 @@ interface Props {
 
 const ChartsSection: React.FC<Props> = ({ mode, results }) => {
   const [showInvestedLine, setShowInvestedLine] = useState(true);
+  const [showInflationLine, setShowInflationLine] = useState(true);
   const [activeIndex, setActiveIndex] = useState(0);
 
   const getPieData = () => {
@@ -63,19 +64,21 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="p-4 rounded-xl shadow-xl border backdrop-blur-sm transition-colors dark:bg-gray-900/80 dark:border-gray-700 bg-gray-50/80 border-gray-200">
-          <p className="text-sm font-bold text-gray-600 dark:text-gray-300 mb-2">Year {label}</p>
-          {payload.map((entry: any, index: number) => (
-            <div key={index} className="flex items-center gap-3 justify-between">
-              <span className="flex items-center gap-2">
-                <div className="w-2 h-2 rounded-full" style={{ backgroundColor: entry.color || entry.stroke }}></div>
-                <span className="text-xs font-medium dark:text-gray-400 text-gray-500">{entry.name}:</span>
-              </span>
-              <span className="text-sm font-bold dark:text-gray-100 text-gray-900">
-                ₹{(entry.value ?? 0).toLocaleString('en-IN')}
-              </span>
-            </div>
-          ))}
+        <div className="p-3.5 sm:p-4 rounded-xl shadow-xl border backdrop-blur-md transition-colors bg-white/95 dark:bg-slate-900/95 border-slate-200 dark:border-slate-700 min-w-[200px]">
+          <p className="text-xs font-bold text-slate-500 dark:text-slate-400 mb-2">Year {label} Forecast</p>
+          <div className="space-y-1.5">
+            {payload.map((entry: any, index: number) => (
+              <div key={index} className="flex items-center gap-3 justify-between">
+                <span className="flex items-center gap-2">
+                  <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: entry.color || entry.stroke }}></div>
+                  <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{entry.name}:</span>
+                </span>
+                <span className="text-xs sm:text-sm font-extrabold text-slate-900 dark:text-white">
+                  ₹{(entry.value ?? 0).toLocaleString('en-IN')}
+                </span>
+              </div>
+            ))}
+          </div>
         </div>
       );
     }
@@ -91,15 +94,18 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
   const chartData = getChartData();
 
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+    <div className="space-y-6 min-w-0 w-full">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 min-w-0 w-full">
         {/* Composition Chart (Pie) */}
-        <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
-          <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 mb-4 flex items-center gap-2">
-            <span className={`w-1 h-4 ${mode === 'Loan' ? 'bg-rose-500' : 'bg-emerald-500'} rounded-full`}></span>
-            {mode === 'Loan' ? 'Loan Breakdown' : mode === 'SWP' ? 'SWP Summary' : 'Wealth Composition'}
-          </h3>
-          <div className="h-64">
+        <div className="p-4 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_10px_25px_-5px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:bg-slate-900 dark:border-slate-800 bg-white border-slate-200/90 min-w-0 w-full overflow-hidden">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-base sm:text-lg font-extrabold dark:text-white text-slate-900 flex items-center gap-2">
+              <span className={`w-1.5 h-4 ${mode === 'Loan' ? 'bg-rose-500' : 'bg-emerald-500'} rounded-full`}></span>
+              {mode === 'Loan' ? 'Loan Breakdown' : mode === 'SWP' ? 'SWP Summary' : 'Wealth Composition'}
+            </h3>
+            <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Ratio Analysis</span>
+          </div>
+          <div className="h-64 min-w-0 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 {/* @ts-ignore */}
@@ -127,36 +133,69 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
               </PieChart>
             </ResponsiveContainer>
           </div>
+          {/* Legend */}
+          <div className="flex items-center justify-center gap-4 sm:gap-6 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+            {pieData.map((item, idx) => (
+              <div key={item.name} className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: COLORS[idx % COLORS.length] }}></span>
+                <span className="font-semibold text-slate-600 dark:text-slate-300">{item.name}</span>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Projection Chart (Area) */}
-        <div className="p-6 rounded-2xl shadow-[0_2px_8px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_24px_rgba(0,0,0,0.08)] dark:bg-slate-900/50 dark:border-slate-800 bg-white border-slate-100">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-            <h3 className="text-lg font-bold dark:text-gray-100 text-slate-800 flex items-center gap-2">
-              <span className="w-1 h-4 bg-indigo-500 rounded-full"></span>
+        <div className="p-4 sm:p-6 rounded-2xl shadow-[0_1px_3px_rgba(0,0,0,0.05),0_10px_25px_-5px_rgba(0,0,0,0.04)] border transition-all hover:shadow-[0_8px_30px_rgba(0,0,0,0.06)] dark:bg-slate-900 dark:border-slate-800 bg-white border-slate-200/90 min-w-0 w-full overflow-hidden">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
+            <h3 className="text-base sm:text-lg font-extrabold dark:text-white text-slate-900 flex items-center gap-2">
+              <span className="w-1.5 h-4 bg-indigo-500 rounded-full"></span>
               {mode === 'Loan' ? 'Repayment Schedule' : 'Growth Projection'}
             </h3>
             
-            {(mode === 'SIP' || mode === 'Lumpsum') && (
-              <button 
-                onClick={() => setShowInvestedLine(!showInvestedLine)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  showInvestedLine 
-                    ? 'dark:bg-slate-800 dark:text-slate-400 bg-slate-100 text-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700' 
-                    : 'dark:bg-indigo-900/30 dark:text-indigo-400 bg-indigo-50 text-indigo-600 hover:bg-indigo-100'
-                }`}
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3.5 w-3.5" viewBox="0 0 20 20" fill="currentColor">
-                  {showInvestedLine ? (
-                    <path fillRule="evenodd" d="M3.707 2.293a1 1 0 00-1.414 1.414l14 14a1 1 0 001.414-1.414l-1.473-1.473A10.014 10.014 0 0019.542 10C18.268 5.943 14.478 3 10 3a9.958 9.958 0 00-4.512 1.074l-1.78-1.781zm4.261 4.26a4 4 0 015.493 5.493l-5.493-5.493z" clipRule="evenodd" />
-                  ) : (
-                    <path d="M10 12a2 2 0 100-4 2 2 0 000 4z" />
-                  )}
-                  <path fillRule="evenodd" d="M.458 10C1.732 5.943 5.522 3 10 3c2.11 0 4.041.665 5.624 1.797l-1.414 1.414A7.963 7.963 0 0010 5C6.333 5 3.393 7.42 2.146 10c.484 1.002 1.144 1.884 1.938 2.606L2.67 14.02A9.978 9.978 0 01.458 10z" clipRule="evenodd" />
-                </svg>
-                {showInvestedLine ? 'Hide Principal' : 'Show Principal'}
-              </button>
-            )}
+            <div className="flex items-center gap-2 flex-wrap">
+              {(mode === 'SIP' || mode === 'Lumpsum') && (
+                <>
+                  <button 
+                    onClick={() => setShowInflationLine(!showInflationLine)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                      showInflationLine 
+                        ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-800' 
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                    }`}
+                    title="Toggle Inflation-adjusted line"
+                  >
+                    <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                    {showInflationLine ? 'Real Value: ON' : 'Real Value: OFF'}
+                  </button>
+
+                  <button 
+                    onClick={() => setShowInvestedLine(!showInvestedLine)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                      showInvestedLine 
+                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-700' 
+                        : 'bg-slate-50 dark:bg-slate-800/40 text-slate-400 border-slate-200 dark:border-slate-800'
+                    }`}
+                  >
+                    <span className="w-2 h-2 rounded-full bg-slate-500"></span>
+                    {showInvestedLine ? 'Principal: ON' : 'Principal: OFF'}
+                  </button>
+                </>
+              )}
+
+              {mode === 'SWP' && (
+                <button 
+                  onClick={() => setShowInflationLine(!showInflationLine)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-bold transition-all cursor-pointer border ${
+                    showInflationLine 
+                      ? 'bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border-teal-300 dark:border-teal-800' 
+                      : 'bg-slate-100 dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700'
+                  }`}
+                >
+                  <span className="w-2 h-2 rounded-full bg-teal-600"></span>
+                  {showInflationLine ? 'Real Balance: ON' : 'Real Balance: OFF'}
+                </button>
+              )}
+            </div>
           </div>
           
           <div className="h-64">
@@ -164,20 +203,24 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
               <AreaChart data={chartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorValue" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0.15}/>
-                    <stop offset="95%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0}/>
+                    <stop offset="5%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0.2}/>
+                    <stop offset="95%" stopColor={mode === 'Loan' ? '#f43f5e' : '#6366f1'} stopOpacity={0.01}/>
+                  </linearGradient>
+                  <linearGradient id="colorReal" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#0d9488" stopOpacity={0.15}/>
+                    <stop offset="95%" stopColor="#0d9488" stopOpacity={0}/>
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" opacity={0.08} />
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#94a3b8" opacity={0.2} />
                 <XAxis 
                   dataKey="year" 
-                  tick={{ fontSize: 11, fill: '#475569' }} 
+                  tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} 
                   axisLine={false} 
                   tickLine={false}
                   padding={{ left: 10, right: 10 }}
                 />
                 <YAxis 
-                  tick={{ fontSize: 10, fill: '#64748b' }} 
+                  tick={{ fontSize: 10, fill: '#64748b', fontWeight: 600 }} 
                   axisLine={false} 
                   tickLine={false} 
                   tickFormatter={(val) => {
@@ -188,6 +231,8 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
                   }}
                 />
                 <Tooltip content={<CustomTooltip />} />
+                
+                {/* Nominal Value */}
                 <Area 
                   type="monotone" 
                   dataKey={mode === 'Loan' ? 'balance' : 'totalValue'} 
@@ -195,21 +240,58 @@ const ChartsSection: React.FC<Props> = ({ mode, results }) => {
                   strokeWidth={3} 
                   fillOpacity={1} 
                   fill="url(#colorValue)" 
-                  name={mode === 'Loan' ? 'Outstanding Balance' : 'Total Wealth'}
-                  activeDot={{ r: 6, stroke: 'var(--card-bg, #fff)', strokeWidth: 2 }}
+                  name={mode === 'Loan' ? 'Outstanding Balance' : 'Terminal Wealth (Nominal)'}
+                  activeDot={{ r: 6, stroke: '#ffffff', strokeWidth: 2 }}
                   animationDuration={1500}
                   animationEasing="ease-in-out"
                 />
+
+                {/* Real Value (Inflation-Adjusted) for SIP/Lumpsum */}
+                {(mode === 'SIP' || mode === 'Lumpsum') && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="realValue" 
+                    stroke="#0d9488" 
+                    strokeWidth={2.5} 
+                    fillOpacity={1}
+                    fill="url(#colorReal)" 
+                    name="Real Purchasing Power"
+                    hide={!showInflationLine}
+                    activeDot={{ r: 5, stroke: '#ffffff', strokeWidth: 2 }}
+                    animationDuration={1200}
+                    animationEasing="ease-in-out"
+                  />
+                )}
+
+                {/* SWP Real Balance */}
+                {mode === 'SWP' && (
+                  <Area 
+                    type="monotone" 
+                    dataKey="realBalance" 
+                    stroke="#0d9488" 
+                    strokeWidth={2.5} 
+                    fillOpacity={1}
+                    fill="url(#colorReal)" 
+                    name="Real Remaining Balance"
+                    hide={!showInflationLine}
+                    activeDot={{ r: 5, stroke: '#ffffff', strokeWidth: 2 }}
+                    animationDuration={1200}
+                    animationEasing="ease-in-out"
+                  />
+                )}
+
+                {/* Invested Amount (SIP / Lumpsum) */}
                 {(mode === 'SIP' || mode === 'Lumpsum') && (
                   <Area 
                     type="monotone" 
                     dataKey="invested" 
-                    stroke="#6b7280" 
+                    stroke="#64748b" 
                     strokeWidth={2} 
+                    strokeDasharray="4 4"
                     fillOpacity={0} 
-                    name="Invested Amount"
+                    name="Total Invested"
                     hide={!showInvestedLine}
-                    activeDot={{ r: 4, stroke: 'var(--card-bg, #fff)', strokeWidth: 2 }}
+                    activeDot={{ r: 4, stroke: '#ffffff', strokeWidth: 2 }}
                     animationDuration={1000}
                     animationEasing="ease-in-out"
                   />

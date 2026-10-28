@@ -98,11 +98,11 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
     return (
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 p-4 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-700 transition-all transform hover:scale-110 z-50 flex items-center gap-2 group"
+        className="fixed bottom-4 sm:bottom-6 right-4 sm:right-6 p-3.5 sm:p-4 bg-indigo-600 text-white rounded-full shadow-2xl hover:bg-indigo-700 transition-all transform hover:scale-105 active:scale-95 z-40 flex items-center justify-center gap-2 group cursor-pointer border-none outline-none"
         aria-label="Ask AI"
       >
-        <MessageSquare className="h-6 w-6" />
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap">
+        <MessageSquare className="h-5 w-5 sm:h-6 sm:w-6" />
+        <span className="hidden sm:inline max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap text-sm">
           Ask AI
         </span>
       </button>
@@ -111,9 +111,9 @@ const AIChatbot: React.FC<AIChatbotProps> = ({
 
   return (
     <div 
-      className={`fixed bottom-6 right-6 w-80 md:w-96 rounded-3xl shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden border ${
+      className={`fixed bottom-4 sm:bottom-6 right-4 sm:right-6 w-[calc(100vw-2rem)] sm:w-96 max-w-sm rounded-2xl sm:rounded-3xl shadow-2xl z-50 flex flex-col transition-all duration-300 overflow-hidden border ${
         darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-      } ${isMinimized ? 'h-16' : 'h-[500px]'}`}
+      } ${isMinimized ? 'h-16' : 'h-[460px] sm:h-[500px]'}`}
     >
       {/* Header */}
       <div className="p-4 bg-indigo-600 text-white flex items-center justify-between cursor-pointer" onClick={() => isMinimized && setIsMinimized(false)}>

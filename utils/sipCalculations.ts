@@ -12,8 +12,9 @@ const getFrequencyFactor = (freq: Frequency): number => {
 };
 
 export const calculateWealth = (inputs: SIPInputs): SIPResults => {
-  const { investmentAmount, expectedReturn, periodYears, mode, frequency } = inputs;
+  const { investmentAmount, expectedReturn, periodYears, mode, frequency, inflationRate = 6 } = inputs;
   const yearlyData: GrowthDataPoint[] = [];
+  const annualInflation = Math.max(0, inflationRate) / 100;
   
   if (mode === 'SIP') {
     const frequencyFactor = getFrequencyFactor(frequency);
@@ -28,10 +29,14 @@ export const calculateWealth = (inputs: SIPInputs): SIPResults => {
         ((Math.pow(1 + periodicRate, totalPeriods) - 1) / periodicRate) * 
         (1 + periodicRate);
 
+      // Real purchasing power adjusted for inflation over 'year' years
+      const realValue = futureValue / Math.pow(1 + annualInflation, year);
+
       yearlyData.push({
         year,
         invested: Math.round(invested),
         totalValue: Math.round(futureValue),
+        realValue: Math.round(realValue),
       });
     }
   } else {
@@ -41,11 +46,13 @@ export const calculateWealth = (inputs: SIPInputs): SIPResults => {
     for (let year = 1; year <= periodYears; year++) {
       const invested = investmentAmount;
       const futureValue = investmentAmount * Math.pow(1 + annualRate, year);
+      const realValue = futureValue / Math.pow(1 + annualInflation, year);
 
       yearlyData.push({
         year,
         invested: Math.round(invested),
         totalValue: Math.round(futureValue),
+        realValue: Math.round(realValue),
       });
     }
   }
@@ -54,12 +61,15 @@ export const calculateWealth = (inputs: SIPInputs): SIPResults => {
   const frequencyFactor = getFrequencyFactor(frequency);
   const totalInvested = mode === 'SIP' ? investmentAmount * periodYears * frequencyFactor : investmentAmount;
   const totalValue = lastYear ? lastYear.totalValue : 0;
+  const realValue = lastYear ? lastYear.realValue : 0;
   const estimatedReturns = totalValue - totalInvested;
 
   return {
     totalInvested: Math.round(totalInvested),
     estimatedReturns: Math.round(estimatedReturns),
     totalValue: Math.round(totalValue),
+    realValue: Math.round(realValue),
+    inflationRate,
     yearlyData,
   };
 };

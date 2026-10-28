@@ -20,7 +20,8 @@ const DEFAULT_SIP_INPUTS: SIPInputs = {
   expectedReturn: 12,
   periodYears: 10,
   mode: 'SIP',
-  frequency: 'Monthly'
+  frequency: 'Monthly',
+  inflationRate: 6
 };
 
 const DEFAULT_LOAN_INPUTS: LoanInputs = {
@@ -33,7 +34,8 @@ const DEFAULT_SWP_INPUTS: SWPInputs = {
   totalInvestment: 1000000,
   withdrawalAmount: 10000,
   expectedReturn: 8,
-  periodYears: 10
+  periodYears: 10,
+  inflationRate: 6
 };
 
 const App: React.FC = () => {
@@ -150,10 +152,12 @@ const App: React.FC = () => {
       const res = results as SIPResults;
       const amount = formatCurrency(sipInputs.investmentAmount);
       const total = formatCurrency(res.totalValue);
+      const realVal = formatCurrency(res.realValue);
       const invested = formatCurrency(res.totalInvested);
       const returns = formatCurrency(res.estimatedReturns);
       const years = sipInputs.periodYears;
       const rate = sipInputs.expectedReturn;
+      const inflation = sipInputs.inflationRate;
       const m = sipInputs.mode === 'SIP' ? `${sipInputs.frequency} SIP` : 'Lumpsum';
       
       return `🌟 *BHARAT WEALTH - INVESTMENT REPORT* 🌟
@@ -164,11 +168,13 @@ Namaste! I just calculated my wealth growth plan on Bharat Wealth! 🇮🇳
 💰 *Principal Amount*: ${amount}
 ⏳ *Strategic Horizon*: ${years} Years
 📈 *Expected CAGR*: ${rate}%
+🎯 *Expected Inflation*: ${inflation}% p.a.
 
 🏆 *ESTIMATED FUTURE WEALTH* 🏆
 ✨ *Total Amount Invested*: ${invested}
 ✨ *Estimated Wealth Gained*: ${returns}
 ✨ *Terminal Portfolio Value*: ${total}
+💎 *Real Purchasing Power (Today's ₹)*: ${realVal}
 
 *Past performance is indicative, not guaranteed. Simulation by Bharat Wealth.*`;
     } else if (mode === 'Loan') {
@@ -201,8 +207,10 @@ Namaste! I just analyzed my loan repayment schedule on Bharat Wealth! 🇮🇳
       const withdrawAmt = formatCurrency(swpInputs.withdrawalAmount);
       const totalWithdrawn = formatCurrency(res.totalWithdrawn);
       const finalBal = formatCurrency(res.finalBalance);
+      const realBal = formatCurrency(res.realFinalBalance);
       const years = swpInputs.periodYears;
       const rate = swpInputs.expectedReturn;
+      const inflation = swpInputs.inflationRate;
       
       return `🌟 *BHARAT WEALTH - SWP RETIREMENT PLAN* 🌟
 ------------------------------------------
@@ -213,10 +221,12 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
 💵 *Target Monthly Income*: ${withdrawAmt}
 ⏳ *Retirement Horizon*: ${years} Years
 📈 *Expected Annual Return*: ${rate}%
+🎯 *Expected Inflation*: ${inflation}% p.a.
 
 🏆 *ESTIMATED MATURITY BENEFITS* 🏆
 ✨ *Total Amount Withdrawn*: ${totalWithdrawn}
 ✨ *Terminal Portfolio Balance*: ${finalBal}
+💎 *Real Balance (Today's Purchasing Power)*: ${realBal}
 
 *Plan your second innings beautifully with Bharat Wealth.*`;
     }
@@ -279,7 +289,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
   };
 
   return (
-    <div className={`min-h-screen transition-colors duration-500 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-white text-slate-900'} pb-24`}>
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} pb-24 w-full max-w-full overflow-x-hidden`}>
       {showGuide && <OnboardingGuide onClose={() => setShowGuide(false)} />}
       {showShareModal && <ShareModal onClose={() => setShowShareModal(false)} shareText={shareText} appUrl={window.location.origin} />}
       
@@ -297,22 +307,22 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
       {/* Floating WhatsApp Button */}
       <button
         onClick={() => handleWhatsAppShare(true)}
-        className="fixed bottom-24 right-6 p-4 bg-[#25D366] text-white rounded-full shadow-2xl hover:bg-[#128C7E] transition-all transform hover:scale-110 z-50 flex items-center gap-2 group screenshot-hide cursor-pointer border-none outline-none"
+        className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 p-3.5 sm:p-4 bg-[#25D366] text-white rounded-full shadow-lg hover:bg-[#128C7E] transition-all transform hover:scale-105 active:scale-95 z-40 flex items-center justify-center gap-2 group screenshot-hide cursor-pointer border-none outline-none"
         aria-label="Chat on WhatsApp"
       >
-        <svg viewBox="0 0 24 24" className="h-6 w-6 fill-current">
+        <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6 fill-current">
           <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
         </svg>
-        <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap">
+        <span className="hidden sm:inline max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap text-sm">
           WhatsApp Us
         </span>
       </button>
       
       {/* APP HEADER */}
-      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white border-slate-200/60 shadow-sm'} backdrop-blur-xl screenshot-hide`}>
-        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
-          <div className="flex items-center gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
-            <div className="relative w-10 h-10 transform transition-transform group-hover:rotate-12">
+      <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/95 border-slate-200/90 shadow-xs'} backdrop-blur-xl screenshot-hide w-full`}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3 sm:gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
+            <div className="relative w-9 h-9 sm:w-10 sm:h-10 transform transition-transform group-hover:rotate-12 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
                 <defs>
                   <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -324,28 +334,28 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                 <path d="M35 60 L50 75 L90 25 M90 25 L75 25 M90 25 L90 40" fill="none" stroke="url(#logoGradient)" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h1 className="text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-indigo-500 to-indigo-600">
+            <h1 className="text-xl sm:text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-indigo-500 to-indigo-600 truncate">
               Bharat Wealth
             </h1>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <button 
               onClick={() => setShowGuide(true)} 
-              className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all active:scale-90"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all active:scale-90"
               title="How it works"
             >
-              <Info className="h-5 w-5" />
+              <Info className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90">
-              {darkMode ? <Sun className="h-5 w-5 text-amber-500" /> : <Moon className="h-5 w-5 text-slate-600" />}
+            <button onClick={() => setDarkMode(!darkMode)} className="p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90">
+              {darkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />}
             </button>
           </div>
         </div>
       </header>
 
       {/* DASHBOARD UI */}
-      <main className="max-w-7xl mx-auto px-6 py-10 grid grid-cols-1 lg:grid-cols-12 gap-10">
-        <aside className="lg:col-span-4 space-y-8 screenshot-hide">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-10 grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 w-full overflow-hidden">
+        <aside className="lg:col-span-4 space-y-6 sm:space-y-8 screenshot-hide min-w-0 w-full">
           <InputSection 
             mode={mode}
             setMode={setMode}
@@ -359,7 +369,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
           />
           
           {/* AI Strategy Advisor Box (Responsive Scheme) 🔵 */}
-          <div className={`p-8 rounded-3xl space-y-4 shadow-xl border transition-all duration-300 ${darkMode ? 'bg-blue-900 border-blue-800 text-white' : 'bg-indigo-600 border-indigo-500 text-white'}`}>
+          <div className={`p-6 sm:p-8 rounded-3xl space-y-4 shadow-xl border transition-all duration-300 ${darkMode ? 'bg-blue-900 border-blue-800 text-white' : 'bg-indigo-600 border-indigo-500 text-white'}`}>
              <h3 className="text-xl font-bold flex items-center gap-2">
                 <span className="text-indigo-200">⚡</span> AI Strategy Advisor
              </h3>
@@ -368,7 +378,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                <button 
                  onClick={handleGetInsights} 
                  disabled={isGenerating}
-                 className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg ${
+                 className={`w-full py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition-all active:scale-95 shadow-lg cursor-pointer ${
                    darkMode ? 'bg-white text-blue-900 hover:bg-blue-50' : 'bg-white text-indigo-600 hover:bg-indigo-50'
                  }`}
                >
@@ -378,35 +388,36 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
           </div>
         </aside>
 
-        <section className="lg:col-span-8 space-y-8" ref={reportRef}>
-           <div className="flex justify-between items-end screenshot-hide relative z-10">
-              <div className="space-y-1">
-                <h2 className="text-xs font-black text-slate-400 uppercase tracking-widest">Projection Dashboard</h2>
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Growth analysis & wealth forecast</p>
+        <section className="lg:col-span-8 space-y-6 sm:space-y-8 min-w-0 w-full" ref={reportRef}>
+           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-3.5 screenshot-hide relative z-10 w-full">
+              <div className="space-y-0.5 sm:space-y-1">
+                <h2 className="text-[11px] sm:text-xs font-black text-slate-400 uppercase tracking-widest">Projection Dashboard</h2>
+                <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium">Growth analysis & wealth forecast</p>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2.5 sm:gap-3 w-full sm:w-auto">
                 <button 
                   onClick={() => setShowShareModal(true)} 
-                  className="p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group flex items-center justify-center"
+                  className="p-2.5 sm:p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md hover:scale-105 active:scale-95 transition-all group flex items-center justify-center shrink-0 cursor-pointer"
                   title="Share Plan"
+                  aria-label="Share Plan"
                 >
-                  <Share2 className="h-6 w-6 text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300" strokeWidth={2.5} />
+                  <Share2 className="h-5 w-5 sm:h-6 sm:w-6 text-indigo-600 dark:text-indigo-400 group-hover:text-indigo-700 dark:group-hover:text-indigo-300" strokeWidth={2.5} />
                 </button>
                 
                 <button 
                   onClick={handleDownloadPdf} 
                   disabled={isCapturing}
-                  className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-indigo-600 text-white font-black text-[11px] uppercase tracking-widest hover:bg-indigo-700 hover:shadow-indigo-500/20 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                  className="flex-1 sm:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 py-2.5 sm:py-3 rounded-2xl bg-indigo-600 text-white font-black text-[10px] sm:text-[11px] uppercase tracking-widest hover:bg-indigo-700 hover:shadow-indigo-500/20 hover:shadow-lg active:scale-95 transition-all disabled:opacity-50 cursor-pointer"
                 >
                   {isCapturing ? (
                     <span className="flex items-center gap-2">
-                      <RefreshCw className="animate-spin h-5 w-5 text-white" strokeWidth={2.5} />
+                      <RefreshCw className="animate-spin h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
                       Processing
                     </span>
                   ) : (
                     <>
-                      <FileDown className="h-5 w-5 text-white" strokeWidth={2.5} />
-                      Download PDF
+                      <FileDown className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
+                      <span>Download PDF</span>
                     </>
                   )}
                 </button>
@@ -431,18 +442,18 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
            )}
            
            {aiInsight && (
-             <div className={`p-10 rounded-[2.5rem] border shadow-xl ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
-                <h3 className="text-2xl font-black mb-6 flex items-center gap-3">
-                  <div className="w-1.5 h-8 bg-indigo-600 rounded-full"></div>
+             <div className={`p-5 sm:p-10 rounded-2xl sm:rounded-[2.5rem] border shadow-xl min-w-0 w-full overflow-hidden ${darkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'}`}>
+                <h3 className="text-xl sm:text-2xl font-black mb-4 sm:mb-6 flex items-center gap-3">
+                  <div className="w-1.5 h-6 sm:h-8 bg-indigo-600 rounded-full"></div>
                   AI Strategic Insight
                 </h3>
-                <p className="text-lg leading-relaxed text-slate-500 dark:text-slate-400 mb-8">{aiInsight.analysis}</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                   <div className="p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800">
+                <p className="text-base sm:text-lg leading-relaxed text-slate-500 dark:text-slate-400 mb-6 sm:mb-8">{aiInsight.analysis}</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                   <div className="p-4 sm:p-6 rounded-2xl bg-emerald-50 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-800">
                       <h4 className="text-[10px] font-black uppercase text-emerald-600 mb-2">Pro Strategy</h4>
                       <p className="text-sm font-bold text-slate-800 dark:text-emerald-100">{aiInsight.proTip}</p>
                    </div>
-                   <div className="p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800">
+                   <div className="p-4 sm:p-6 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-100 dark:border-amber-800">
                       <h4 className="text-[10px] font-black uppercase text-amber-600 mb-2">Key Risk</h4>
                       <p className="text-sm font-bold text-slate-800 dark:text-amber-100">{aiInsight.warning}</p>
                    </div>
@@ -453,27 +464,27 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
       </main>
 
       {/* Footer Disclaimer */}
-      <footer className="max-w-7xl mx-auto px-6 py-12 border-t border-gray-200 dark:border-slate-800 screenshot-hide">
-        <div className="mb-10 pb-8 border-b border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400">Have more questions about this plan?</p>
-          <div className="flex flex-wrap gap-4">
+      <footer className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 border-t border-gray-200 dark:border-slate-800 screenshot-hide w-full overflow-hidden">
+        <div className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+          <p className="text-sm font-bold text-slate-500 dark:text-slate-400 text-center md:text-left">Have more questions about this plan?</p>
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
             <button 
               onClick={() => setShowChat(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20"
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 text-sm cursor-pointer"
             >
               <MessageSquare className="h-4 w-4" />
               Ask AI Assistant
             </button>
             <button 
               onClick={() => handleWhatsAppShare(true)}
-              className="flex items-center gap-2 px-6 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 cursor-pointer border-none outline-none"
+              className="flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 cursor-pointer border-none outline-none text-sm"
             >
               <MessageCircle className="h-4 w-4" />
               WhatsApp for Info
             </button>
           </div>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 sm:gap-8 items-start">
           <div className="space-y-4">
             <div className="flex items-center gap-2 opacity-50">
               <div className="w-6 h-6">
@@ -488,7 +499,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
               Developed with precision for the Indian investment landscape.
             </p>
           </div>
-          <div className="bg-gray-100/50 dark:bg-slate-900/50 p-6 rounded-2xl border border-gray-200 dark:border-slate-800">
+          <div className="bg-gray-100/50 dark:bg-slate-900/50 p-4 sm:p-6 rounded-2xl border border-gray-200 dark:border-slate-800">
             <h4 className="text-[10px] font-black uppercase tracking-widest text-slate-500 mb-3">Professional Disclaimer</h4>
             <p className="text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
               The projections and insights generated by Bharat Wealth are based on standardized mathematical growth formulas and are intended for illustrative and educational purposes only. 
@@ -514,7 +525,8 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
           color: '#0f172a',
           padding: '60px',
           fontFamily: "'Inter', sans-serif",
-          zIndex: -100
+          zIndex: -100,
+          pointerEvents: 'none'
         }}
       >
         <div style={{ borderBottom: '8px solid #1e1b4b', paddingBottom: '3rem', marginBottom: '3rem', position: 'relative', overflow: 'hidden' }}>
@@ -558,16 +570,17 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
              <h3 style={{ fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#94a3b8' }}>I. Executive Summary</h3>
              <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '1.5rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: mode === 'Loan' ? 'repeat(4, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))', gap: '1.25rem' }}>
             {mode === 'SIP' || mode === 'Lumpsum' ? [
               { label: 'Investment Mode', value: `${sipInputs.mode} (${sipInputs.frequency})`, color: '#4f46e5' },
-              { label: 'Principal Commitment', value: formatCurrency(sipInputs.investmentAmount), color: '#0f172a' },
+              { label: 'Principal', value: formatCurrency(sipInputs.investmentAmount), color: '#0f172a' },
               { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}%`, color: '#059669' },
-              { label: 'Strategic Horizon', value: `${sipInputs.periodYears} Years`, color: '#d97706' }
+              { label: 'Expected Inflation', value: `${sipInputs.inflationRate}%`, color: '#0d9488' },
+              { label: 'Horizon', value: `${sipInputs.periodYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
                 <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
+                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             )) : mode === 'Loan' ? [
               { label: 'Loan Amount', value: formatCurrency(loanInputs.loanAmount), color: '#4f46e5' },
@@ -575,19 +588,20 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
               { label: 'Interest Rate', value: `${loanInputs.interestRate}%`, color: '#e11d48' },
               { label: 'Tenure', value: `${loanInputs.tenureYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
                 <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
+                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             )) : [
               { label: 'Total Investment', value: formatCurrency(swpInputs.totalInvestment), color: '#4f46e5' },
               { label: 'Monthly Withdrawal', value: formatCurrency(swpInputs.withdrawalAmount), color: '#4c0519' },
               { label: 'Expected Return', value: `${swpInputs.expectedReturn}%`, color: '#059669' },
+              { label: 'Expected Inflation', value: `${swpInputs.inflationRate}%`, color: '#0d9488' },
               { label: 'Period', value: `${swpInputs.periodYears} Years`, color: '#d97706' }
             ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.5rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
+              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
                 <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: item.color }}>{item.value}</p>
+                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
               </div>
             ))}
           </div>
@@ -600,7 +614,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                 <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
              </div>
              <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', backgroundColor: '#eef2ff', borderRadius: '1rem', border: '1px solid #e0e7ff' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#eef2ff', borderRadius: '1rem', border: '1px solid #e0e7ff' }}>
                    <p style={{ fontWeight: 700, color: '#475569' }}>
                      {mode === 'Loan' ? 'Total Principal' : mode === 'SWP' ? 'Total Investment' : 'Projected Total Invested'}
                    </p>
@@ -612,7 +626,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                      )}
                    </p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem', backgroundColor: '#ecfdf5', borderRadius: '1rem', border: '1px solid #d1fae5' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#ecfdf5', borderRadius: '1rem', border: '1px solid #d1fae5' }}>
                    <p style={{ fontWeight: 700, color: '#475569' }}>
                      {mode === 'Loan' ? 'Total Interest' : mode === 'SWP' ? 'Total Withdrawn' : 'Estimated Portfolio Yield'}
                    </p>
@@ -624,10 +638,27 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                      )}
                    </p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '2rem', backgroundColor: '#1e1b4b', borderRadius: '2rem', color: '#ffffff' }}>
+                {(mode === 'SIP' || mode === 'Lumpsum' || mode === 'SWP') && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#f0fdfa', borderRadius: '1rem', border: '1px solid #ccfbf1' }}>
+                    <div>
+                      <p style={{ fontWeight: 700, color: '#115e59', fontSize: '0.875rem' }}>Purchasing Power (Real Value)</p>
+                      <p style={{ fontSize: '10px', color: '#0d9488' }}>
+                        In today's ₹ at {mode === 'SWP' ? swpInputs.inflationRate : sipInputs.inflationRate}% annual inflation
+                      </p>
+                    </div>
+                    <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#0f766e' }}>
+                      {formatCurrency(
+                        mode === 'SWP' 
+                          ? (results as SWPResults).realFinalBalance 
+                          : (results as SIPResults).realValue
+                      )}
+                    </p>
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem', backgroundColor: '#1e1b4b', borderRadius: '1.5rem', color: '#ffffff' }}>
                    <div>
                       <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, marginBottom: '0.25rem' }}>
-                        {mode === 'Loan' ? 'Total Repayment' : mode === 'SWP' ? 'Final Balance' : 'Terminal Portfolio Value'}
+                        {mode === 'Loan' ? 'Total Repayment' : mode === 'SWP' ? 'Final Balance (Nominal)' : 'Terminal Portfolio Value (Nominal)'}
                       </p>
                       <p style={{ fontSize: '1.875rem', lineHeight: '2.25rem', fontWeight: 900 }}>
                         {formatCurrency(
@@ -637,8 +668,8 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                         )}
                       </p>
                    </div>
-                   <div style={{ width: '4rem', height: '4rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
-                       <TrendingUp className="h-8 w-8" strokeWidth={3} />
+                   <div style={{ width: '3.5rem', height: '3.5rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
+                       <TrendingUp className="h-7 w-7" strokeWidth={3} />
                    </div>
                 </div>
              </div>

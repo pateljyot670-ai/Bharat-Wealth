@@ -6,6 +6,8 @@ export interface SIPResults {
   totalInvested: number;
   estimatedReturns: number;
   totalValue: number;
+  realValue: number;
+  inflationRate: number;
   yearlyData: GrowthDataPoint[];
 }
 
@@ -19,6 +21,8 @@ export interface LoanResults {
 export interface SWPResults {
   totalWithdrawn: number;
   finalBalance: number;
+  realFinalBalance: number;
+  inflationRate: number;
   yearlyData: SWPDataPoint[];
 }
 
@@ -26,6 +30,7 @@ export interface GrowthDataPoint {
   year: number;
   invested: number;
   totalValue: number;
+  realValue: number;
 }
 
 export interface AmortizationPoint {
@@ -39,6 +44,7 @@ export interface SWPDataPoint {
   year: number;
   withdrawn: number;
   balance: number;
+  realBalance: number;
 }
 
 export interface SIPInputs {
@@ -47,6 +53,7 @@ export interface SIPInputs {
   periodYears: number;
   mode: CalculationMode;
   frequency: Frequency;
+  inflationRate: number;
 }
 
 export interface LoanInputs {
@@ -60,6 +67,7 @@ export interface SWPInputs {
   withdrawalAmount: number;
   expectedReturn: number;
   periodYears: number;
+  inflationRate: number;
 }
 
 export interface AIInsight {

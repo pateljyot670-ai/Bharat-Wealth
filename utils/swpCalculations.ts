@@ -1,8 +1,9 @@
 import { SWPInputs, SWPResults, SWPDataPoint } from '../types';
 
 export const calculateSWP = (inputs: SWPInputs): SWPResults => {
-  const { totalInvestment, withdrawalAmount, expectedReturn, periodYears } = inputs;
+  const { totalInvestment, withdrawalAmount, expectedReturn, periodYears, inflationRate = 6 } = inputs;
   const monthlyRate = expectedReturn / 12 / 100;
+  const annualInflation = Math.max(0, inflationRate) / 100;
   
   let currentBalance = totalInvestment;
   let totalWithdrawn = 0;
@@ -24,16 +25,25 @@ export const calculateSWP = (inputs: SWPInputs): SWPResults => {
       // Interest is calculated on the remaining balance
       currentBalance *= (1 + monthlyRate);
     }
+    
+    const realBalance = currentBalance / Math.pow(1 + annualInflation, year);
+
     yearlyData.push({
       year,
-      withdrawn: totalWithdrawn,
-      balance: currentBalance
+      withdrawn: Math.round(totalWithdrawn),
+      balance: Math.round(currentBalance),
+      realBalance: Math.round(realBalance)
     });
   }
 
+  const finalBalance = Math.round(currentBalance);
+  const realFinalBalance = Math.round(currentBalance / Math.pow(1 + annualInflation, periodYears));
+
   return {
-    totalWithdrawn,
-    finalBalance: currentBalance,
+    totalWithdrawn: Math.round(totalWithdrawn),
+    finalBalance,
+    realFinalBalance,
+    inflationRate,
     yearlyData
   };
 };
