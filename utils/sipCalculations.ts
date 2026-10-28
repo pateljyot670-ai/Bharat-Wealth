@@ -1,5 +1,5 @@
 
-import { SIPInputs, SIPResults, GrowthDataPoint, Frequency } from '../types';
+import { SIPInputs, SIPResults, GrowthDataPoint, Frequency, CapitalGainsTaxResult, TaxHoldingPeriod } from '../types';
 
 const getFrequencyFactor = (freq: Frequency): number => {
   switch (freq) {
@@ -81,4 +81,58 @@ export const formatCurrency = (value: number) => {
     maximumFractionDigits: 0,
     minimumFractionDigits: 0,
   }).format(value);
+};
+
+export const calculateCapitalGainsTax = (
+  grossGains: number,
+  totalInvested: number,
+  holdingPeriod: TaxHoldingPeriod = 'long-term'
+): CapitalGainsTaxResult => {
+  const gains = Math.max(0, grossGains);
+  
+  if (holdingPeriod === 'long-term') {
+    // Under Indian Budget 2024: LTCG on equity is 12.5% for gains above ₹1,25,000 exemption limit per FY
+    const exemptionLimit = 125000;
+    const taxableGains = Math.max(0, gains - exemptionLimit);
+    const taxRatePercent = 12.5;
+    const taxAmount = Math.round(taxableGains * 0.125);
+    const netReturns = Math.max(0, gains - taxAmount);
+    const netTotalValue = Math.round(totalInvested + netReturns);
+    const effectiveTaxRate = gains > 0 ? Number(((taxAmount / gains) * 100).toFixed(1)) : 0;
+    
+    return {
+      holdingPeriod,
+      grossGains: gains,
+      exemptionLimit,
+      taxableGains,
+      taxRatePercent,
+      taxAmount,
+      netReturns,
+      netTotalValue,
+      effectiveTaxRate,
+      taxRuleDescription: 'LTCG @ 12.5% on gains exceeding ₹1.25L exemption (Holding > 1 Year, Union Budget 2024)',
+    };
+  } else {
+    // Under Indian Budget 2024: STCG on equity is 20% flat on all gains with no exemption limit
+    const exemptionLimit = 0;
+    const taxableGains = gains;
+    const taxRatePercent = 20;
+    const taxAmount = Math.round(taxableGains * 0.20);
+    const netReturns = Math.max(0, gains - taxAmount);
+    const netTotalValue = Math.round(totalInvested + netReturns);
+    const effectiveTaxRate = gains > 0 ? Number(((taxAmount / gains) * 100).toFixed(1)) : 0;
+    
+    return {
+      holdingPeriod,
+      grossGains: gains,
+      exemptionLimit,
+      taxableGains,
+      taxRatePercent,
+      taxAmount,
+      netReturns,
+      netTotalValue,
+      effectiveTaxRate,
+      taxRuleDescription: 'STCG @ 20% on all gains (Holding ≤ 1 Year, Union Budget 2024)',
+    };
+  }
 };

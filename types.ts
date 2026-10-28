@@ -18,6 +18,21 @@ export interface LoanResults {
   amortizationData: AmortizationPoint[];
 }
 
+export type TaxHoldingPeriod = 'long-term' | 'short-term';
+
+export interface CapitalGainsTaxResult {
+  holdingPeriod: TaxHoldingPeriod;
+  grossGains: number;
+  exemptionLimit: number;
+  taxableGains: number;
+  taxRatePercent: number;
+  taxAmount: number;
+  netReturns: number;
+  netTotalValue: number;
+  effectiveTaxRate: number;
+  taxRuleDescription: string;
+}
+
 export interface SWPResults {
   totalWithdrawn: number;
   finalBalance: number;

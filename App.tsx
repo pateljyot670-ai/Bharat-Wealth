@@ -1,7 +1,7 @@
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode } from './types';
-import { calculateWealth, formatCurrency } from './utils/sipCalculations';
+import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode, TaxHoldingPeriod } from './types';
+import { calculateWealth, formatCurrency, calculateCapitalGainsTax } from './utils/sipCalculations';
 import { calculateLoan } from './utils/loanCalculations';
 import { calculateSWP } from './utils/swpCalculations';
 import { getFinancialInsights } from './services/geminiService';
@@ -61,6 +61,10 @@ const App: React.FC = () => {
   const [showGuide, setShowGuide] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showChat, setShowChat] = useState(false);
+  const [showTaxImpact, setShowTaxImpact] = useState<boolean>(false);
+  const [taxHoldingPeriod, setTaxHoldingPeriod] = useState<TaxHoldingPeriod>(() => {
+    return DEFAULT_SIP_INPUTS.periodYears > 1 ? 'long-term' : 'short-term';
+  });
 
   useEffect(() => {
     if (darkMode) {
@@ -81,6 +85,22 @@ const App: React.FC = () => {
       return calculateSWP(swpInputs);
     }
   }, [mode, sipInputs, loanInputs, swpInputs]);
+
+  const taxImpactInfo = useMemo(() => {
+    if (!showTaxImpact || (mode !== 'SIP' && mode !== 'Lumpsum' && mode !== 'SWP')) return null;
+    let gains = 0;
+    let invested = 0;
+    if (mode === 'SIP' || mode === 'Lumpsum') {
+      const res = results as SIPResults;
+      gains = res.estimatedReturns;
+      invested = res.totalInvested;
+    } else if (mode === 'SWP') {
+      const res = results as SWPResults;
+      gains = Math.max(0, (res.totalWithdrawn + res.finalBalance) - swpInputs.totalInvestment);
+      invested = swpInputs.totalInvestment;
+    }
+    return calculateCapitalGainsTax(gains, invested, taxHoldingPeriod);
+  }, [showTaxImpact, mode, results, sipInputs, swpInputs, taxHoldingPeriod]);
 
   const handleGetInsights = async () => {
     setIsGenerating(true);
@@ -174,7 +194,12 @@ Namaste! I just calculated my wealth growth plan on Bharat Wealth! 🇮🇳
 ✨ *Total Amount Invested*: ${invested}
 ✨ *Estimated Wealth Gained*: ${returns}
 ✨ *Terminal Portfolio Value*: ${total}
-💎 *Real Purchasing Power (Today's ₹)*: ${realVal}
+💎 *Real Purchasing Power (Today's ₹)*: ${realVal}${showTaxImpact && taxImpactInfo ? `
+
+⚖️ *TAX IMPACT (Union Budget 2024)* ⚖️
+🏷️ *Holding Period*: ${taxHoldingPeriod === 'long-term' ? 'Long-Term (> 1 Yr, LTCG)' : 'Short-Term (≤ 1 Yr, STCG)'}
+💸 *Estimated Tax Liability*: ${formatCurrency(taxImpactInfo.taxAmount)} (${taxImpactInfo.effectiveTaxRate}% effective)
+💵 *Net In-Hand Wealth*: ${formatCurrency(taxImpactInfo.netTotalValue)}` : ''}
 
 *Past performance is indicative, not guaranteed. Simulation by Bharat Wealth.*`;
     } else if (mode === 'Loan') {
@@ -431,7 +456,15 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
              </div>
            )}
 
-           <ResultCards mode={mode} results={results} />
+           <ResultCards 
+             mode={mode} 
+             results={results} 
+             periodYears={mode === 'Loan' ? loanInputs.tenureYears : mode === 'SWP' ? swpInputs.periodYears : sipInputs.periodYears}
+             showTaxImpact={showTaxImpact}
+             setShowTaxImpact={setShowTaxImpact}
+             taxHoldingPeriod={taxHoldingPeriod}
+             setTaxHoldingPeriod={setTaxHoldingPeriod}
+           />
            <ChartsSection mode={mode} results={results} />
            
            {aiError && (
@@ -653,6 +686,26 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                           : (results as SIPResults).realValue
                       )}
                     </p>
+                  </div>
+                )}
+                {showTaxImpact && taxImpactInfo && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#fef2f2', borderRadius: '1rem', border: '1px solid #fee2e2' }}>
+                    <div>
+                      <p style={{ fontWeight: 700, color: '#991b1b', fontSize: '0.875rem' }}>
+                        Est. Capital Gains Tax ({taxHoldingPeriod === 'long-term' ? 'LTCG @ 12.5%' : 'STCG @ 20%'})
+                      </p>
+                      <p style={{ fontSize: '10px', color: '#b91c1c' }}>
+                        {taxImpactInfo.taxRuleDescription}
+                      </p>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: '#dc2626' }}>
+                        - {formatCurrency(taxImpactInfo.taxAmount)}
+                      </p>
+                      <p style={{ fontSize: '10px', color: '#047857', fontWeight: 700 }}>
+                        Net In-Hand: {formatCurrency(taxImpactInfo.netTotalValue)}
+                      </p>
+                    </div>
                   </div>
                 )}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem', backgroundColor: '#1e1b4b', borderRadius: '1.5rem', color: '#ffffff' }}>
