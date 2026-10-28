@@ -148,8 +148,8 @@ const InputSection: React.FC<Props> = ({
 
       <div className="flex items-center justify-between pt-1">
         <div className="flex items-center gap-2.5">
-          <div className="w-1.5 h-6 bg-indigo-600 rounded-full shadow-sm shadow-indigo-200"></div>
-          <h2 className="text-xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <div className="w-1.5 h-6 bg-indigo-600 dark:bg-sky-400 rounded-full shadow-sm shadow-indigo-200 dark:shadow-none"></div>
+          <h2 className="text-xl font-extrabold tracking-tight text-indigo-800 dark:text-sky-300">
             {mode} Details
           </h2>
         </div>
@@ -168,7 +168,7 @@ const InputSection: React.FC<Props> = ({
         <>
           {mode === 'SIP' && (
             <div className="space-y-2">
-              <label className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">Frequency</label>
+              <label className="text-xs font-bold uppercase tracking-wider text-indigo-800 dark:text-sky-300">Frequency</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {frequencies.map((freq) => (
                   <button
@@ -190,20 +190,20 @@ const InputSection: React.FC<Props> = ({
           {/* Investment Amount */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">
                 {mode === 'SIP' ? `${sipInputs.frequency} Amount` : 'One-time Amount'}
               </label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.investmentAmount 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold mr-1 text-base">₹</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black mr-1 text-base">₹</span>
                 <input
                   type="number"
                   value={displayValue(sipInputs.investmentAmount)}
                   onChange={(e) => handleValueChange('investmentAmount', e.target.value)}
-                  className={`w-28 bg-transparent text-lg font-black ${errors.investmentAmount ? 'text-red-700 dark:text-red-400' : 'text-slate-900 dark:text-white'} border-none outline-none text-right`}
+                  className={`w-28 bg-transparent text-lg font-black ${errors.investmentAmount ? 'text-red-600 dark:text-red-400' : 'text-indigo-600 dark:text-indigo-400'} border-none outline-none focus:outline-none focus:ring-0 text-right`}
                 />
               </div>
             </div>
@@ -214,26 +214,26 @@ const InputSection: React.FC<Props> = ({
               step={mode === 'SIP' ? 100 : 5000}
               value={sipInputs.investmentAmount}
               onInput={(e) => handleValueChange('investmentAmount', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 text-indigo-600 dark:text-indigo-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Expected Return */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Return Rate (p.a)</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Return Rate (p.a)</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.expectedReturn 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100 dark:focus-within:ring-emerald-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(sipInputs.expectedReturn)}
                   onChange={(e) => handleValueChange('expectedReturn', e.target.value)}
-                  className={`w-16 bg-transparent text-lg font-black ${errors.expectedReturn ? 'text-red-700 dark:text-red-400' : 'text-emerald-700 dark:text-emerald-400'} border-none outline-none text-right`}
+                  className={`w-16 bg-transparent text-lg font-black ${errors.expectedReturn ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'} border-none outline-none focus:outline-none focus:ring-0 text-right`}
                 />
-                <span className="text-emerald-600 dark:text-emerald-400 font-extrabold ml-1">%</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-black ml-1">%</span>
               </div>
             </div>
             <input
@@ -243,26 +243,26 @@ const InputSection: React.FC<Props> = ({
               step="0.1"
               value={sipInputs.expectedReturn}
               onInput={(e) => handleValueChange('expectedReturn', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-emerald-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-emerald-600 text-emerald-600 dark:text-emerald-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Period */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Time Period</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Time Period</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.periodYears 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 dark:focus-within:ring-amber-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(sipInputs.periodYears)}
                   onChange={(e) => handleValueChange('periodYears', e.target.value)}
-                  className={`w-12 bg-transparent text-lg font-black ${errors.periodYears ? 'text-red-700 dark:text-red-400' : 'text-amber-700 dark:text-amber-400'} border-none outline-none text-right`}
+                  className={`w-12 bg-transparent text-lg font-black ${errors.periodYears ? 'text-red-600 dark:text-red-400' : 'text-amber-600 dark:text-amber-400'} border-none outline-none focus:outline-none focus:ring-0 text-right`}
                 />
-                <span className="text-amber-600 dark:text-amber-400 font-extrabold ml-1">Yr</span>
+                <span className="text-amber-600 dark:text-amber-400 font-black ml-1">Yr</span>
               </div>
             </div>
             <input
@@ -272,7 +272,7 @@ const InputSection: React.FC<Props> = ({
               step="1"
               value={sipInputs.periodYears}
               onInput={(e) => handleValueChange('periodYears', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 text-amber-500 dark:text-amber-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
@@ -280,7 +280,7 @@ const InputSection: React.FC<Props> = ({
           <div className="space-y-3 pt-3 border-t border-slate-200/90 dark:border-slate-800">
             <div className="flex justify-between items-center">
               <div>
-                <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <label className="text-sm font-bold text-indigo-800 dark:text-sky-300 flex items-center gap-1.5">
                   <span>Expected Inflation Rate</span>
                   <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
                     Real Value
@@ -290,19 +290,19 @@ const InputSection: React.FC<Props> = ({
                   Adjusts terminal wealth for purchasing power
                 </p>
               </div>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.inflationRate 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100 dark:focus-within:ring-teal-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(sipInputs.inflationRate)}
                   onChange={(e) => handleValueChange('inflationRate', e.target.value)}
-                  className={`w-14 bg-transparent text-lg font-black ${errors.inflationRate ? 'text-red-700 dark:text-red-400' : 'text-teal-700 dark:text-teal-400'} border-none outline-none text-right`}
+                  className={`w-14 bg-transparent text-lg font-black ${errors.inflationRate ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'} border-none outline-none focus:outline-none focus:ring-0 text-right`}
                   step="0.5"
                 />
-                <span className="text-teal-600 dark:text-teal-400 font-extrabold ml-1">%</span>
+                <span className="text-teal-600 dark:text-teal-400 font-black ml-1">%</span>
               </div>
             </div>
             <input
@@ -312,7 +312,7 @@ const InputSection: React.FC<Props> = ({
               step="0.5"
               value={sipInputs.inflationRate}
               onInput={(e) => handleValueChange('inflationRate', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-teal-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-teal-600 text-teal-600 dark:text-teal-400 bg-slate-200 dark:bg-slate-700"
             />
             {/* Quick Presets */}
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
@@ -346,18 +346,18 @@ const InputSection: React.FC<Props> = ({
           {/* Loan Amount */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Loan Amount</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Loan Amount</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.loanAmount 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold mr-1 text-base">₹</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black mr-1 text-base">₹</span>
                 <input
                   type="number"
                   value={displayValue(loanInputs.loanAmount)}
                   onChange={(e) => handleValueChange('loanAmount', e.target.value)}
-                  className="w-28 bg-transparent text-lg font-black text-slate-900 dark:text-white border-none outline-none text-right"
+                  className="w-28 bg-transparent text-lg font-black text-indigo-600 dark:text-indigo-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
               </div>
             </div>
@@ -368,26 +368,26 @@ const InputSection: React.FC<Props> = ({
               step="10000"
               value={loanInputs.loanAmount}
               onInput={(e) => handleValueChange('loanAmount', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 text-indigo-600 dark:text-indigo-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Interest Rate */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Interest Rate (p.a)</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Interest Rate (p.a)</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.interestRate 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-100 dark:focus-within:ring-rose-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(loanInputs.interestRate)}
                   onChange={(e) => handleValueChange('interestRate', e.target.value)}
-                  className="w-16 bg-transparent text-lg font-black text-rose-700 dark:text-rose-400 border-none outline-none text-right"
+                  className="w-16 bg-transparent text-lg font-black text-rose-600 dark:text-rose-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
-                <span className="text-rose-600 dark:text-rose-400 font-extrabold ml-1">%</span>
+                <span className="text-rose-600 dark:text-rose-400 font-black ml-1">%</span>
               </div>
             </div>
             <input
@@ -397,26 +397,26 @@ const InputSection: React.FC<Props> = ({
               step="0.1"
               value={loanInputs.interestRate}
               onInput={(e) => handleValueChange('interestRate', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-rose-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-rose-600 text-rose-600 dark:text-rose-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Tenure */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Tenure</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Tenure</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.tenureYears 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 dark:focus-within:ring-amber-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(loanInputs.tenureYears)}
                   onChange={(e) => handleValueChange('tenureYears', e.target.value)}
-                  className="w-12 bg-transparent text-lg font-black text-amber-700 dark:text-amber-400 border-none outline-none text-right"
+                  className="w-12 bg-transparent text-lg font-black text-amber-600 dark:text-amber-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
-                <span className="text-amber-600 dark:text-amber-400 font-extrabold ml-1">Yr</span>
+                <span className="text-amber-600 dark:text-amber-400 font-black ml-1">Yr</span>
               </div>
             </div>
             <input
@@ -426,7 +426,7 @@ const InputSection: React.FC<Props> = ({
               step="1"
               value={loanInputs.tenureYears}
               onInput={(e) => handleValueChange('tenureYears', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 text-amber-500 dark:text-amber-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
         </>
@@ -437,18 +437,18 @@ const InputSection: React.FC<Props> = ({
           {/* Total Investment */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Total Investment</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Total Investment</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.totalInvestment 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-indigo-500 focus-within:ring-2 focus-within:ring-indigo-100 dark:focus-within:ring-indigo-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
-                <span className="text-indigo-600 dark:text-indigo-400 font-extrabold mr-1 text-base">₹</span>
+                <span className="text-indigo-600 dark:text-indigo-400 font-black mr-1 text-base">₹</span>
                 <input
                   type="number"
                   value={displayValue(swpInputs.totalInvestment)}
                   onChange={(e) => handleValueChange('totalInvestment', e.target.value)}
-                  className="w-28 bg-transparent text-lg font-black text-slate-900 dark:text-white border-none outline-none text-right"
+                  className="w-28 bg-transparent text-lg font-black text-indigo-600 dark:text-indigo-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
               </div>
             </div>
@@ -459,25 +459,25 @@ const InputSection: React.FC<Props> = ({
               step="10000"
               value={swpInputs.totalInvestment}
               onInput={(e) => handleValueChange('totalInvestment', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-indigo-600 text-indigo-600 dark:text-indigo-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Withdrawal Amount */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Monthly Withdrawal</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Monthly Withdrawal</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.withdrawalAmount 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-rose-500 focus-within:ring-2 focus-within:ring-rose-100 dark:focus-within:ring-rose-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
-                <span className="text-rose-600 dark:text-rose-400 font-extrabold mr-1 text-base">₹</span>
+                <span className="text-rose-600 dark:text-rose-400 font-black mr-1 text-base">₹</span>
                 <input
                   type="number"
                   value={displayValue(swpInputs.withdrawalAmount)}
                   onChange={(e) => handleValueChange('withdrawalAmount', e.target.value)}
-                  className="w-28 bg-transparent text-lg font-black text-rose-700 dark:text-rose-400 border-none outline-none text-right"
+                  className="w-28 bg-transparent text-lg font-black text-rose-600 dark:text-rose-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
               </div>
             </div>
@@ -488,26 +488,26 @@ const InputSection: React.FC<Props> = ({
               step="500"
               value={swpInputs.withdrawalAmount}
               onInput={(e) => handleValueChange('withdrawalAmount', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-rose-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-rose-600 text-rose-600 dark:text-rose-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Expected Return */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Return Rate (p.a)</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Return Rate (p.a)</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.expectedReturn 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-emerald-500 focus-within:ring-2 focus-within:ring-emerald-100 dark:focus-within:ring-emerald-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(swpInputs.expectedReturn)}
                   onChange={(e) => handleValueChange('expectedReturn', e.target.value)}
-                  className="w-16 bg-transparent text-lg font-black text-emerald-700 dark:text-emerald-400 border-none outline-none text-right"
+                  className="w-16 bg-transparent text-lg font-black text-emerald-600 dark:text-emerald-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
-                <span className="text-emerald-600 dark:text-emerald-400 font-extrabold ml-1">%</span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-black ml-1">%</span>
               </div>
             </div>
             <input
@@ -517,26 +517,26 @@ const InputSection: React.FC<Props> = ({
               step="0.1"
               value={swpInputs.expectedReturn}
               onInput={(e) => handleValueChange('expectedReturn', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-emerald-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-emerald-600 text-emerald-600 dark:text-emerald-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
           {/* Period */}
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <label className="text-sm font-bold text-slate-800 dark:text-slate-200">Time Period</label>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <label className="text-sm font-bold text-indigo-800 dark:text-sky-300">Time Period</label>
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.periodYears 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-amber-500 focus-within:ring-2 focus-within:ring-amber-100 dark:focus-within:ring-amber-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(swpInputs.periodYears)}
                   onChange={(e) => handleValueChange('periodYears', e.target.value)}
-                  className="w-12 bg-transparent text-lg font-black text-amber-700 dark:text-amber-400 border-none outline-none text-right"
+                  className="w-12 bg-transparent text-lg font-black text-amber-600 dark:text-amber-400 border-none outline-none focus:outline-none focus:ring-0 text-right"
                 />
-                <span className="text-amber-600 dark:text-amber-400 font-extrabold ml-1">Yr</span>
+                <span className="text-amber-600 dark:text-amber-400 font-black ml-1">Yr</span>
               </div>
             </div>
             <input
@@ -546,7 +546,7 @@ const InputSection: React.FC<Props> = ({
               step="1"
               value={swpInputs.periodYears}
               onInput={(e) => handleValueChange('periodYears', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-amber-500 text-amber-500 dark:text-amber-400 bg-slate-200 dark:bg-slate-700"
             />
           </div>
 
@@ -554,7 +554,7 @@ const InputSection: React.FC<Props> = ({
           <div className="space-y-3 pt-3 border-t border-slate-200/90 dark:border-slate-800">
             <div className="flex justify-between items-center">
               <div>
-                <label className="text-sm font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <label className="text-sm font-bold text-indigo-800 dark:text-sky-300 flex items-center gap-1.5">
                   <span>Expected Inflation Rate</span>
                   <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-teal-50 dark:bg-teal-950/40 text-teal-700 dark:text-teal-400 border border-teal-200 dark:border-teal-800">
                     Real Value
@@ -564,19 +564,19 @@ const InputSection: React.FC<Props> = ({
                   Adjusts final corpus balance for purchasing power
                 </p>
               </div>
-              <div className={`flex items-center px-3 py-1 rounded-xl border transition-all duration-200 ${
+              <div className={`flex items-center px-3 py-1.5 rounded-xl border transition-colors duration-200 ${
                 errors.inflationRate 
                   ? 'bg-red-50 dark:bg-red-950/30 border-red-300 dark:border-red-800' 
-                  : 'bg-slate-50 dark:bg-slate-800/80 border-slate-300 dark:border-slate-700 focus-within:bg-white focus-within:border-teal-500 focus-within:ring-2 focus-within:ring-teal-100 dark:focus-within:ring-teal-950'
+                  : 'bg-slate-50 dark:bg-slate-800/90 border-slate-200 dark:border-slate-700/80'
                 }`}>
                 <input
                   type="number"
                   value={displayValue(swpInputs.inflationRate)}
                   onChange={(e) => handleValueChange('inflationRate', e.target.value)}
-                  className={`w-14 bg-transparent text-lg font-black ${errors.inflationRate ? 'text-red-700 dark:text-red-400' : 'text-teal-700 dark:text-teal-400'} border-none outline-none text-right`}
+                  className={`w-14 bg-transparent text-lg font-black ${errors.inflationRate ? 'text-red-600 dark:text-red-400' : 'text-teal-600 dark:text-teal-400'} border-none outline-none focus:outline-none focus:ring-0 text-right`}
                   step="0.5"
                 />
-                <span className="text-teal-600 dark:text-teal-400 font-extrabold ml-1">%</span>
+                <span className="text-teal-600 dark:text-teal-400 font-black ml-1">%</span>
               </div>
             </div>
             <input
@@ -586,7 +586,7 @@ const InputSection: React.FC<Props> = ({
               step="0.5"
               value={swpInputs.inflationRate}
               onInput={(e) => handleValueChange('inflationRate', (e.target as HTMLInputElement).value)}
-              className="w-full h-2 rounded-full cursor-pointer accent-teal-600 bg-slate-200 dark:bg-slate-700"
+              className="w-full h-2 rounded-full cursor-pointer accent-teal-600 text-teal-600 dark:text-teal-400 bg-slate-200 dark:bg-slate-700"
             />
             {/* Quick Presets */}
             <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
