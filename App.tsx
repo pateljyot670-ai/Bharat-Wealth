@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { SIPInputs, SIPResults, LoanInputs, LoanResults, SWPInputs, SWPResults, AIInsight, CalculationMode, TaxHoldingPeriod } from './types';
 import { calculateWealth, formatCurrency, calculateCapitalGainsTax } from './utils/sipCalculations';
@@ -11,7 +10,7 @@ import ChartsSection from './components/ChartsSection';
 import OnboardingGuide from './components/OnboardingGuide';
 import ShareModal from './components/ShareModal';
 import AIChatbot from './components/AIChatbot';
-import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle, MessageSquare, MessageCircle } from 'lucide-react';
+import { Share2, FileDown, Info, Sun, Moon, CheckCircle2, TrendingUp, RefreshCw, AlertCircle, MessageSquare } from 'lucide-react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 
@@ -37,6 +36,8 @@ const DEFAULT_SWP_INPUTS: SWPInputs = {
   periodYears: 10,
   inflationRate: 6
 };
+
+const WHATSAPP_LOGO_PATH = "M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z";
 
 const App: React.FC = () => {
   const reportRef = useRef<HTMLDivElement>(null);
@@ -122,7 +123,7 @@ const App: React.FC = () => {
   };
 
   const handleReset = () => {
-    if (mode === 'SIP' || mode === 'Lumpsum') setSipInputs(DEFAULT_SIP_INPUTS);
+    if (mode === 'SIP' || mode === 'Lumpsum') setSipInputs({ ...DEFAULT_SIP_INPUTS, mode });
     else if (mode === 'Loan') setLoanInputs(DEFAULT_LOAN_INPUTS);
     else setSwpInputs(DEFAULT_SWP_INPUTS);
     setAiInsight(null);
@@ -134,7 +135,7 @@ const App: React.FC = () => {
     setIsCapturing(true);
     setPdfError(null);
     
-    await new Promise(r => setTimeout(r, 500)); // Give more time for rendering
+    await new Promise(r => setTimeout(r, 400));
 
     try {
       const canvas = await html2canvas(pdfTemplateRef.current, {
@@ -146,19 +147,20 @@ const App: React.FC = () => {
         removeContainer: true
       });
       
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const pdfWidth = 210; // Standard A4 width in mm
+      const calculatedHeight = (canvas.height * pdfWidth) / canvas.width;
+      const pageHeight = Math.max(297, Math.ceil(calculatedHeight));
+
       const pdf = new jsPDF({
         orientation: 'portrait',
         unit: 'mm',
-        format: 'a4',
+        format: [pdfWidth, pageHeight],
         compress: true 
       });
 
-      const pdfWidth = pdf.internal.pageSize.getWidth();
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-
-      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, pdfHeight, undefined, 'FAST');
-      pdf.save(`BharatWealth_Report_${new Date().getTime()}.pdf`);
+      pdf.addImage(imgData, 'JPEG', 0, 0, pdfWidth, calculatedHeight, undefined, 'FAST');
+      pdf.save(`BharatWealth_${mode}_Report_${new Date().getTime()}.pdf`);
     } catch (err: any) {
       console.error("PDF Generation Error:", err);
       setPdfError("Failed to generate PDF. Please try again or use a different browser.");
@@ -178,23 +180,21 @@ const App: React.FC = () => {
       const years = sipInputs.periodYears;
       const rate = sipInputs.expectedReturn;
       const inflation = sipInputs.inflationRate;
-      const m = sipInputs.mode === 'SIP' ? `${sipInputs.frequency} SIP` : 'Lumpsum';
+      const m = mode === 'SIP' ? `${sipInputs.frequency} SIP` : 'One-Time Lumpsum';
       
-      return `🌟 *BHARAT WEALTH - INVESTMENT REPORT* 🌟
+      return `🌟 *BHARAT WEALTH - ${mode.toUpperCase()} REPORT* 🌟
 ------------------------------------------
 Namaste! I just calculated my wealth growth plan on Bharat Wealth! 🇮🇳
 
 📊 *Plan Type*: ${m}
 💰 *Principal Amount*: ${amount}
 ⏳ *Strategic Horizon*: ${years} Years
-📈 *Expected CAGR*: ${rate}%
-🎯 *Expected Inflation*: ${inflation}% p.a.
+📈 *Expected CAGR*: ${rate}%${inflation > 0 ? `\n🎯 *Expected Inflation*: ${inflation}% p.a.` : ''}
 
 🏆 *ESTIMATED FUTURE WEALTH* 🏆
 ✨ *Total Amount Invested*: ${invested}
 ✨ *Estimated Wealth Gained*: ${returns}
-✨ *Terminal Portfolio Value*: ${total}
-💎 *Real Purchasing Power (Today's ₹)*: ${realVal}${showTaxImpact && taxImpactInfo ? `
+✨ *Terminal Portfolio Value*: ${total}${inflation > 0 ? `\n💎 *Real Purchasing Power (Today's ₹)*: ${realVal}` : ''}${showTaxImpact && taxImpactInfo ? `
 
 ⚖️ *TAX IMPACT (Union Budget 2024)* ⚖️
 🏷️ *Holding Period*: ${taxHoldingPeriod === 'long-term' ? 'Long-Term (> 1 Yr, LTCG)' : 'Short-Term (≤ 1 Yr, STCG)'}
@@ -245,17 +245,20 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
 💰 *Initial Lump Sum Investment*: ${initialAmt}
 💵 *Target Monthly Income*: ${withdrawAmt}
 ⏳ *Retirement Horizon*: ${years} Years
-📈 *Expected Annual Return*: ${rate}%
-🎯 *Expected Inflation*: ${inflation}% p.a.
+📈 *Expected Annual Return*: ${rate}%${inflation > 0 ? `\n🎯 *Expected Inflation*: ${inflation}% p.a.` : ''}
 
 🏆 *ESTIMATED MATURITY BENEFITS* 🏆
 ✨ *Total Amount Withdrawn*: ${totalWithdrawn}
-✨ *Terminal Portfolio Balance*: ${finalBal}
-💎 *Real Balance (Today's Purchasing Power)*: ${realBal}
+✨ *Terminal Portfolio Balance*: ${finalBal}${inflation > 0 ? `\n💎 *Real Balance (Today's Purchasing Power)*: ${realBal}` : ''}${showTaxImpact && taxImpactInfo ? `
+
+⚖️ *TAX IMPACT (Union Budget 2024)* ⚖️
+🏷️ *Holding Period*: ${taxHoldingPeriod === 'long-term' ? 'Long-Term (> 1 Yr, LTCG)' : 'Short-Term (≤ 1 Yr, STCG)'}
+💸 *Estimated Tax Liability*: ${formatCurrency(taxImpactInfo.taxAmount)} (${taxImpactInfo.effectiveTaxRate}% effective)
+💵 *Net Post-Tax Wealth*: ${formatCurrency(taxImpactInfo.netTotalValue)}` : ''}
 
 *Plan your second innings beautifully with Bharat Wealth.*`;
     }
-  }, [mode, sipInputs, loanInputs, swpInputs, results]);
+  }, [mode, sipInputs, loanInputs, swpInputs, results, showTaxImpact, taxHoldingPeriod, taxImpactInfo]);
 
   const milestones = useMemo(() => {
     let data: any[] = [];
@@ -263,19 +266,19 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
     else if (mode === 'Loan') data = (results as LoanResults).amortizationData;
     else data = (results as SWPResults).yearlyData;
 
-    if (data.length <= 5) return data;
-    const step = Math.floor(data.length / 5);
-    const filtered = data.filter((_, i) => i % step === 0 || i === data.length - 1);
+    if (data.length <= 8) return data;
+    const step = Math.max(1, Math.floor(data.length / 7));
+    const filtered = data.filter((_, i) => i === 0 || (i + 1) % step === 0 || i === data.length - 1);
     return Array.from(new Set(filtered.map(d => d.year))).map(y => data.find(d => d.year === y)!);
   }, [mode, results]);
 
   const handleWhatsAppShare = async (isSupportChat: boolean = false) => {
     const baseUrl = window.location.origin;
+    const whatsappContactNumber = '919274268295';
     const textToShare = isSupportChat 
-      ? `Namaste! I'm interested in the ${mode} plan I just calculated on Bharat Wealth.\n\nDetails:\n${shareText}\n\nCan you provide more information?`
-      : `${shareText}\n\n👉 Plan your financial future too: ${baseUrl}`;
+      ? `Namaste! I would like more information regarding Bharat Wealth and my ${mode} plan calculation.\n\n📊 Plan Details:\n${shareText}\n\nPlease share further information.`
+      : `${shareText}\n\n👉 Plan your financial future: ${baseUrl}`;
 
-    // 1. Try Navigator Share API if on mobile device (best for APK, supports native Android share panel which opens WhatsApp)
     if (!isSupportChat && navigator.share) {
       try {
         await navigator.share({
@@ -283,35 +286,100 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
           text: textToShare,
           url: baseUrl
         });
-        return; // Success! Native share sheet handled it
+        return;
       } catch (err) {
         console.log('Navigator share failed or cancelled, falling back to direct WhatsApp link.', err);
       }
     }
 
-    // 2. Fallback to direct WhatsApp Link
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     const encodedText = encodeURIComponent(textToShare);
     
-    // On mobile devices (and inside Android APK webviews), "whatsapp://send?text=" is the most reliable way 
-    // to open the WhatsApp app directly. On desktop, api.whatsapp.com is best.
-    const whatsappUrl = isMobile 
-      ? `whatsapp://send?text=${encodedText}` 
-      : `https://api.whatsapp.com/send?text=${encodedText}`;
+    const whatsappUrl = isSupportChat
+      ? (isMobile 
+          ? `whatsapp://send?phone=${whatsappContactNumber}&text=${encodedText}` 
+          : `https://wa.me/${whatsappContactNumber}?text=${encodedText}`)
+      : (isMobile 
+          ? `whatsapp://send?text=${encodedText}` 
+          : `https://api.whatsapp.com/send?text=${encodedText}`);
 
     try {
       if (isMobile) {
-        // Use window.location instead of window.open inside mobile APK webviews to prevent opening blank windows
         window.location.href = whatsappUrl;
       } else {
         window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
       }
     } catch (err) {
       console.error('Failed to launch WhatsApp URL scheme:', err);
-      // Absolute fallback
-      window.open(`https://api.whatsapp.com/send?text=${encodedText}`, '_blank', 'noopener,noreferrer');
+      const fallbackUrl = isSupportChat
+        ? `https://wa.me/${whatsappContactNumber}?text=${encodedText}`
+        : `https://api.whatsapp.com/send?text=${encodedText}`;
+      window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
     }
   };
+
+  // Derived flags for PDF Report
+  const activeInflationRate = mode === 'SIP' || mode === 'Lumpsum'
+    ? sipInputs.inflationRate
+    : mode === 'SWP'
+      ? swpInputs.inflationRate
+      : 0;
+  const isInflationEnabled = mode !== 'Loan' && activeInflationRate > 0;
+  const isTaxEnabled = mode !== 'Loan' && showTaxImpact && !!taxImpactInfo;
+  const activeHorizonYears = mode === 'Loan'
+    ? loanInputs.tenureYears
+    : mode === 'SWP'
+      ? swpInputs.periodYears
+      : sipInputs.periodYears;
+
+  const postTaxRealWealth = useMemo(() => {
+    if (!isTaxEnabled || !isInflationEnabled || !taxImpactInfo) return null;
+    return Math.round(taxImpactInfo.netTotalValue / Math.pow(1 + activeInflationRate / 100, activeHorizonYears));
+  }, [isTaxEnabled, isInflationEnabled, taxImpactInfo, activeInflationRate, activeHorizonYears]);
+
+  const pdfCategoryMeta = useMemo(() => {
+    if (mode === 'SIP') {
+      return {
+        badge: 'CATEGORY I • SYSTEMATIC INVESTMENT PLAN (SIP)',
+        accentColor: '#4f46e5',
+        accentBg: '#eef2ff',
+        accentBorder: '#c7d2fe',
+        titleLine1: 'SIP Wealth Accumulation',
+        titleLine2: 'Compounding Report',
+        subtitle: `Periodic ${sipInputs.frequency} investment strategy over ${sipInputs.periodYears} years at ${sipInputs.expectedReturn}% p.a. expected CAGR.`
+      };
+    } else if (mode === 'Lumpsum') {
+      return {
+        badge: 'CATEGORY II • ONE-TIME LUMPSUM INVESTMENT',
+        accentColor: '#0284c7',
+        accentBg: '#f0f9ff',
+        accentBorder: '#bae6fd',
+        titleLine1: 'Lumpsum Capital Growth',
+        titleLine2: 'Projection Report',
+        subtitle: `Single-tranche capital deployment over ${sipInputs.periodYears} years compounding at ${sipInputs.expectedReturn}% p.a.`
+      };
+    } else if (mode === 'Loan') {
+      return {
+        badge: 'CATEGORY III • LOAN EMI & AMORTIZATION SCHEDULE',
+        accentColor: '#e11d48',
+        accentBg: '#fff1f2',
+        accentBorder: '#fecdd3',
+        titleLine1: 'Loan Repayment & EMI',
+        titleLine2: 'Amortization Report',
+        subtitle: `Structured debt service analysis for ${formatCurrency(loanInputs.loanAmount)} at ${loanInputs.interestRate}% p.a. over ${loanInputs.tenureYears} years.`
+      };
+    } else {
+      return {
+        badge: 'CATEGORY IV • SYSTEMATIC WITHDRAWAL PLAN (SWP)',
+        accentColor: '#059669',
+        accentBg: '#ecfdf5',
+        accentBorder: '#a7f3d0',
+        titleLine1: 'SWP Retirement Income',
+        titleLine2: '& Cashflow Report',
+        subtitle: `Monthly income drawdown of ${formatCurrency(swpInputs.withdrawalAmount)} from ${formatCurrency(swpInputs.totalInvestment)} corpus over ${swpInputs.periodYears} years.`
+      };
+    }
+  }, [mode, sipInputs, loanInputs, swpInputs]);
 
   return (
     <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-[#020617] text-slate-100' : 'bg-[#f8fafc] text-slate-900'} pb-24 w-full max-w-full overflow-x-hidden`}>
@@ -329,25 +397,23 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
         setIsOpen={setShowChat}
       />
 
-      {/* Floating WhatsApp Button */}
+      {/* Floating WhatsApp Button (Logo Only - No Visible Phone Number) */}
       <button
         onClick={() => handleWhatsAppShare(true)}
-        className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 p-3.5 sm:p-4 bg-[#25D366] text-white rounded-full shadow-lg hover:bg-[#128C7E] transition-all transform hover:scale-105 active:scale-95 z-40 flex items-center justify-center gap-2 group screenshot-hide cursor-pointer border-none outline-none"
-        aria-label="Chat on WhatsApp"
+        className="fixed bottom-20 sm:bottom-24 right-4 sm:right-6 p-3.5 sm:p-4 bg-[#25D366] text-white rounded-full shadow-2xl hover:bg-[#128C7E] transition-all transform hover:scale-105 active:scale-95 z-40 flex items-center justify-center screenshot-hide cursor-pointer border-none outline-none ring-2 ring-emerald-400/30"
+        aria-label="WhatsApp"
+        title="WhatsApp"
       >
-        <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6 fill-current">
-          <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/>
+        <svg viewBox="0 0 24 24" className="h-5 w-5 sm:h-6 sm:w-6 fill-current shrink-0">
+          <path d={WHATSAPP_LOGO_PATH} />
         </svg>
-        <span className="hidden sm:inline max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 font-bold whitespace-nowrap text-sm">
-          WhatsApp Us
-        </span>
       </button>
       
       {/* APP HEADER */}
       <header className={`border-b sticky top-0 z-40 ${darkMode ? 'bg-[#020617]/90 border-slate-800' : 'bg-white/95 border-slate-200/90 shadow-xs'} backdrop-blur-xl screenshot-hide w-full`}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex justify-between items-center">
-          <div className="flex items-center gap-3 sm:gap-4 group cursor-pointer" onClick={() => window.location.reload()}>
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 transform transition-transform group-hover:rotate-12 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-4 group cursor-pointer min-w-0" onClick={() => window.location.reload()}>
+            <div className="relative w-8 h-8 sm:w-10 sm:h-10 transform transition-transform group-hover:rotate-12 shrink-0">
               <svg viewBox="0 0 100 100" className="w-full h-full drop-shadow-lg">
                 <defs>
                   <linearGradient id="logoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -359,20 +425,26 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                 <path d="M35 60 L50 75 L90 25 M90 25 L75 25 M90 25 L90 40" fill="none" stroke="url(#logoGradient)" strokeWidth="10" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <h1 className="text-xl sm:text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-indigo-500 to-indigo-600 truncate">
+            <h1 className="text-lg sm:text-2xl font-black tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-orange-500 via-indigo-500 to-indigo-600 truncate">
               Bharat Wealth
             </h1>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             <button 
+              onClick={() => setDarkMode(!darkMode)} 
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90 cursor-pointer"
+              title={darkMode ? "Switch to White Mode" : "Switch to Dark Mode"}
+              aria-label="Toggle theme"
+            >
+              {darkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-amber-400" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-indigo-600" />}
+            </button>
+            <button 
               onClick={() => setShowGuide(true)} 
-              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all active:scale-90"
+              className="w-9 h-9 sm:w-10 sm:h-10 flex items-center justify-center rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-slate-700 transition-all active:scale-90 cursor-pointer"
               title="How it works"
+              aria-label="How it works"
             >
               <Info className="h-4 w-4 sm:h-5 sm:w-5" />
-            </button>
-            <button onClick={() => setDarkMode(!darkMode)} className="p-2 sm:p-2.5 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-all active:scale-90">
-              {darkMode ? <Sun className="h-4 w-4 sm:h-5 sm:w-5 text-amber-500" /> : <Moon className="h-4 w-4 sm:h-5 sm:w-5 text-slate-600" />}
             </button>
           </div>
         </div>
@@ -393,7 +465,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
             onReset={handleReset} 
           />
           
-          {/* AI Strategy Advisor Box (Responsive Scheme) 🔵 */}
+          {/* AI Strategy Advisor Box */}
           <div className={`p-6 sm:p-8 rounded-3xl space-y-4 shadow-xl border transition-all duration-300 ${darkMode ? 'bg-blue-900 border-blue-800 text-white' : 'bg-indigo-600 border-indigo-500 text-white'}`}>
              <h3 className="text-xl font-bold flex items-center gap-2">
                 <span className="text-indigo-200">⚡</span> AI Strategy Advisor
@@ -442,7 +514,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                   ) : (
                     <>
                       <FileDown className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
-                      <span>Download PDF</span>
+                      <span>Download {mode} PDF</span>
                     </>
                   )}
                 </button>
@@ -499,8 +571,13 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
       {/* Footer Disclaimer */}
       <footer className="max-w-7xl mx-auto px-4 sm:px-6 py-8 sm:py-12 border-t border-gray-200 dark:border-slate-800 screenshot-hide w-full overflow-hidden">
         <div className="mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-gray-200 dark:border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm font-bold text-slate-500 dark:text-slate-400 text-center md:text-left">Have more questions about this plan?</p>
-          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+          <div className="text-center md:text-left">
+            <p className="text-sm font-bold text-slate-700 dark:text-slate-300">Have questions about your plan or need personalized info?</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              Connect with our AI Assistant or tap the WhatsApp icon for instant guidance.
+            </p>
+          </div>
+          <div className="flex items-center justify-center gap-3 w-full sm:w-auto">
             <button 
               onClick={() => setShowChat(true)}
               className="flex items-center justify-center gap-2 px-5 py-3 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all active:scale-95 shadow-lg shadow-indigo-600/20 text-sm cursor-pointer"
@@ -510,10 +587,13 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
             </button>
             <button 
               onClick={() => handleWhatsAppShare(true)}
-              className="flex items-center justify-center gap-2 px-5 py-3 bg-[#25D366] text-white rounded-2xl font-bold hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 cursor-pointer border-none outline-none text-sm"
+              aria-label="WhatsApp"
+              title="WhatsApp"
+              className="w-11 h-11 flex items-center justify-center bg-[#25D366] text-white rounded-full hover:bg-[#128C7E] transition-all active:scale-95 shadow-lg shadow-emerald-600/20 cursor-pointer border-none outline-none shrink-0"
             >
-              <MessageCircle className="h-4 w-4" />
-              WhatsApp for Info
+              <svg viewBox="0 0 24 24" className="h-5 w-5 fill-current">
+                <path d={WHATSAPP_LOGO_PATH} />
+              </svg>
             </button>
           </div>
         </div>
@@ -544,33 +624,31 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
         </div>
       </footer>
 
-      {/* HIDDEN PREMIUM A4 REPORT TEMPLATE */}
+      {/* HIDDEN PREMIUM CATEGORY-SPECIFIC A4 REPORT TEMPLATE */}
       <div 
         ref={pdfTemplateRef}
         id="pdf-report-hidden-template"
-        className="" 
         style={{ 
           position: 'fixed',
           left: '-9999px',
           top: '0',
-          width: '800px', 
+          width: '840px', 
           backgroundColor: '#ffffff', 
           color: '#0f172a',
-          padding: '60px',
+          padding: '48px 52px',
           fontFamily: "'Inter', sans-serif",
           zIndex: -100,
-          pointerEvents: 'none'
+          pointerEvents: 'none',
+          boxSizing: 'border-box'
         }}
       >
-        <div style={{ borderBottom: '8px solid #1e1b4b', paddingBottom: '3rem', marginBottom: '3rem', position: 'relative', overflow: 'hidden' }}>
-          <div style={{ position: 'absolute', top: 0, right: 0, opacity: 0.05, marginRight: '-5rem', marginTop: '-5rem' }}>
-             <div style={{ width: '24rem', height: '24rem', border: '40px solid #1e1b4b', borderRadius: '9999px' }}></div>
-          </div>
+        {/* REPORT HEADER BANNER */}
+        <div style={{ borderBottom: `6px solid ${pdfCategoryMeta.accentColor}`, paddingBottom: '2rem', marginBottom: '2.25rem', position: 'relative', overflow: 'hidden' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', position: 'relative', zIndex: 10 }}>
-            <div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <div style={{ width: '4rem', height: '4rem', position: 'relative' }}>
-                  <svg viewBox="0 0 100 100" className="w-full h-full">
+            <div style={{ maxWidth: '520px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.875rem', marginBottom: '1rem' }}>
+                <div style={{ width: '3.25rem', height: '3.25rem', position: 'relative' }}>
+                  <svg viewBox="0 0 100 100" style={{ width: '100%', height: '100%' }}>
                     <defs>
                       <linearGradient id="pdfLogoGradient" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" stopColor="#f59e0b" />
@@ -582,203 +660,578 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                   </svg>
                 </div>
                 <div>
-                    <h2 style={{ fontSize: '1.875rem', lineHeight: '2.25rem', fontWeight: 900, letterSpacing: '-0.05em', textTransform: 'uppercase', color: '#1e1b4b' }}>Bharat Wealth</h2>
+                  <h2 style={{ fontSize: '1.5rem', lineHeight: '1.75rem', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'uppercase', color: '#1e1b4b', margin: 0 }}>Bharat Wealth</h2>
+                  <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>Institutional Financial Analytics</p>
                 </div>
               </div>
-              <h1 style={{ fontSize: '3rem', lineHeight: '1', fontWeight: 800, color: '#0f172a' }}>Portfolio Growth <br/><span style={{ color: '#4f46e5' }}>Projections</span></h1>
+
+              {/* Category Badge & Active Calculation Mode Pills */}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.875rem' }}>
+                <span style={{ display: 'inline-block', padding: '0.35rem 0.75rem', borderRadius: '0.5rem', backgroundColor: pdfCategoryMeta.accentBg, border: `1px solid ${pdfCategoryMeta.accentBorder}`, color: pdfCategoryMeta.accentColor, fontSize: '10px', fontWeight: 900, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+                  {pdfCategoryMeta.badge}
+                </span>
+                {isInflationEnabled && (
+                  <span style={{ display: 'inline-block', padding: '0.35rem 0.75rem', borderRadius: '0.5rem', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4', color: '#0f766e', fontSize: '10px', fontWeight: 900, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    Inflation Adjusted ({activeInflationRate}% p.a.)
+                  </span>
+                )}
+                {isTaxEnabled && taxImpactInfo && (
+                  <span style={{ display: 'inline-block', padding: '0.35rem 0.75rem', borderRadius: '0.5rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca', color: '#b91c1c', fontSize: '10px', fontWeight: 900, letterSpacing: '0.06em', textTransform: 'uppercase' }}>
+                    Tax Inclusive ({taxHoldingPeriod === 'long-term' ? 'LTCG 12.5%' : 'STCG 20%'})
+                  </span>
+                )}
+              </div>
+
+              <h1 style={{ fontSize: '2.35rem', lineHeight: '1.1', fontWeight: 900, color: '#0f172a', margin: '0 0 0.5rem 0' }}>
+                {pdfCategoryMeta.titleLine1} <br/>
+                <span style={{ color: pdfCategoryMeta.accentColor }}>{pdfCategoryMeta.titleLine2}</span>
+              </h1>
+              <p style={{ fontSize: '0.825rem', color: '#475569', fontWeight: 600, margin: 0, lineHeight: '1.4' }}>
+                {pdfCategoryMeta.subtitle}
+              </p>
             </div>
+
             <div style={{ textAlign: 'right' }}>
-               <div style={{ backgroundColor: '#f1f5f9', paddingLeft: '1rem', paddingRight: '1rem', paddingTop: '0.5rem', paddingBottom: '0.5rem', borderRadius: '0.5rem', display: 'inline-block', marginBottom: '1rem' }}>
-                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b' }}>Document No.</p>
-                  <p style={{ fontFamily: 'monospace', fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 700, color: '#1e293b', textTransform: 'uppercase' }}>BW-{new Date().getFullYear()}-{Math.floor(Math.random()*10000)}</p>
-               </div>
-               <p style={{ fontSize: '0.875rem', lineHeight: '1.25rem', fontWeight: 500, color: '#64748b' }}>Issue Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}</p>
-               <p style={{ fontSize: '0.75rem', lineHeight: '1rem', color: '#6366f1', fontWeight: 900, marginTop: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Confidential Report</p>
+              <div style={{ backgroundColor: '#f8fafc', border: '1px solid #e2e8f0', padding: '0.75rem 1rem', borderRadius: '0.75rem', display: 'inline-block', marginBottom: '0.75rem' }}>
+                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#64748b', margin: '0 0 0.25rem 0' }}>Report Reference</p>
+                <p style={{ fontFamily: 'monospace', fontSize: '0.85rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', margin: 0 }}>
+                  BW-{mode.toUpperCase()}-{new Date().getFullYear()}
+                </p>
+              </div>
+              <p style={{ fontSize: '0.8rem', fontWeight: 600, color: '#475569', margin: '0 0 0.25rem 0' }}>
+                Date: {new Date().toLocaleDateString('en-IN', { dateStyle: 'long' })}
+              </p>
+              <p style={{ fontSize: '0.7rem', color: pdfCategoryMeta.accentColor, fontWeight: 900, margin: 0, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+                {isInflationEnabled && isTaxEnabled
+                  ? 'Real Value + Post-Tax Edition'
+                  : isTaxEnabled
+                    ? 'Tax-Inclusive Edition'
+                    : isInflationEnabled
+                      ? 'Inflation-Adjusted Edition'
+                      : 'Standard Nominal Edition'}
+              </p>
             </div>
           </div>
         </div>
 
-        <div style={{ marginBottom: '3rem' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-             <h3 style={{ fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#94a3b8' }}>I. Executive Summary</h3>
-             <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
+        {/* SECTION I: CATEGORY-SPECIFIC INPUT PARAMETERS */}
+        <div style={{ marginBottom: '2.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#334155', margin: 0 }}>
+              I. {mode === 'SIP' ? 'SIP Contribution Parameters' : mode === 'Lumpsum' ? 'Lumpsum Capital Parameters' : mode === 'Loan' ? 'Loan Facility Parameters' : 'SWP Drawdown Parameters'}
+            </h3>
+            <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#e2e8f0' }}></div>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: mode === 'Loan' ? 'repeat(4, minmax(0, 1fr))' : 'repeat(5, minmax(0, 1fr))', gap: '1.25rem' }}>
-            {mode === 'SIP' || mode === 'Lumpsum' ? [
-              { label: 'Investment Mode', value: `${sipInputs.mode} (${sipInputs.frequency})`, color: '#4f46e5' },
-              { label: 'Principal', value: formatCurrency(sipInputs.investmentAmount), color: '#0f172a' },
-              { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}%`, color: '#059669' },
-              { label: 'Expected Inflation', value: `${sipInputs.inflationRate}%`, color: '#0d9488' },
-              { label: 'Horizon', value: `${sipInputs.periodYears} Years`, color: '#d97706' }
-            ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
-                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
-              </div>
-            )) : mode === 'Loan' ? [
-              { label: 'Loan Amount', value: formatCurrency(loanInputs.loanAmount), color: '#4f46e5' },
-              { label: 'Monthly EMI', value: formatCurrency((results as LoanResults).monthlyEMI), color: '#0f172a' },
-              { label: 'Interest Rate', value: `${loanInputs.interestRate}%`, color: '#e11d48' },
-              { label: 'Tenure', value: `${loanInputs.tenureYears} Years`, color: '#d97706' }
-            ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
-                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
-              </div>
-            )) : [
-              { label: 'Total Investment', value: formatCurrency(swpInputs.totalInvestment), color: '#4f46e5' },
-              { label: 'Monthly Withdrawal', value: formatCurrency(swpInputs.withdrawalAmount), color: '#4c0519' },
-              { label: 'Expected Return', value: `${swpInputs.expectedReturn}%`, color: '#059669' },
-              { label: 'Expected Inflation', value: `${swpInputs.inflationRate}%`, color: '#0d9488' },
-              { label: 'Period', value: `${swpInputs.periodYears} Years`, color: '#d97706' }
-            ].map((item, i) => (
-              <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1.25rem', borderRadius: '1rem', border: '1px solid #f1f5f9' }}>
-                <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '0.5rem' }}>{item.label}</p>
-                <p style={{ fontSize: '1.15rem', lineHeight: '1.5rem', fontWeight: 900, color: item.color }}>{item.value}</p>
-              </div>
-            ))}
-          </div>
+
+          {/* Separate parameter grids for each of the 4 categories */}
+          {mode === 'SIP' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.875rem' }}>
+              {[
+                { label: 'SIP Frequency', value: `${sipInputs.frequency} SIP`, sub: 'Systematic Plan', color: '#4f46e5' },
+                { label: `${sipInputs.frequency} Amount`, value: formatCurrency(sipInputs.investmentAmount), sub: 'Periodic Installment', color: '#0f172a' },
+                { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}% p.a.`, sub: 'Compounded Return', color: '#059669' },
+                { label: 'Tenure Horizon', value: `${sipInputs.periodYears} Years`, sub: 'Investment Duration', color: '#d97706' },
+                { label: 'Inflation Rate', value: isInflationEnabled ? `${sipInputs.inflationRate}% p.a.` : '0% (Nominal)', sub: isTaxEnabled ? `Tax: ${taxHoldingPeriod === 'long-term' ? 'LTCG 12.5%' : 'STCG 20%'}` : 'Purchasing Power', color: '#0d9488' }
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.875rem', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', margin: '0 0 0.35rem 0' }}>{item.label}</p>
+                  <p style={{ fontSize: '1.05rem', fontWeight: 900, color: item.color, margin: '0 0 0.2rem 0' }}>{item.value}</p>
+                  <p style={{ fontSize: '9px', fontWeight: 600, color: '#94a3b8', margin: 0 }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {mode === 'Lumpsum' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.875rem' }}>
+              {[
+                { label: 'Investment Type', value: 'One-Time Lumpsum', sub: 'Single Tranche', color: '#0284c7' },
+                { label: 'Initial Principal', value: formatCurrency(sipInputs.investmentAmount), sub: 'Upfront Capital', color: '#0f172a' },
+                { label: 'Expected CAGR', value: `${sipInputs.expectedReturn}% p.a.`, sub: 'Annualized Growth', color: '#059669' },
+                { label: 'Holding Period', value: `${sipInputs.periodYears} Years`, sub: 'Compounding Tenure', color: '#d97706' },
+                { label: 'Inflation Rate', value: isInflationEnabled ? `${sipInputs.inflationRate}% p.a.` : '0% (Nominal)', sub: isTaxEnabled ? `Tax: ${taxHoldingPeriod === 'long-term' ? 'LTCG 12.5%' : 'STCG 20%'}` : 'Real Value Basis', color: '#0d9488' }
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.875rem', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', margin: '0 0 0.35rem 0' }}>{item.label}</p>
+                  <p style={{ fontSize: '1.05rem', fontWeight: 900, color: item.color, margin: '0 0 0.2rem 0' }}>{item.value}</p>
+                  <p style={{ fontSize: '9px', fontWeight: 600, color: '#94a3b8', margin: 0 }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {mode === 'Loan' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '0.875rem' }}>
+              {[
+                { label: 'Sanctioned Principal', value: formatCurrency(loanInputs.loanAmount), sub: 'Total Amount Borrowed', color: '#4f46e5' },
+                { label: 'Interest Rate', value: `${loanInputs.interestRate}% p.a.`, sub: 'Reducing Balance Rate', color: '#e11d48' },
+                { label: 'Repayment Tenure', value: `${loanInputs.tenureYears} Years`, sub: `${loanInputs.tenureYears * 12} Monthly EMIs`, color: '#d97706' },
+                { label: 'Interest Burden Ratio', value: `${(((results as LoanResults).totalInterest / Math.max(1, loanInputs.loanAmount)) * 100).toFixed(1)}%`, sub: 'Interest vs Principal', color: '#0f172a' }
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.875rem', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', margin: '0 0 0.35rem 0' }}>{item.label}</p>
+                  <p style={{ fontSize: '1.15rem', fontWeight: 900, color: item.color, margin: '0 0 0.2rem 0' }}>{item.value}</p>
+                  <p style={{ fontSize: '9px', fontWeight: 600, color: '#94a3b8', margin: 0 }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {mode === 'SWP' && (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gap: '0.875rem' }}>
+              {[
+                { label: 'Initial Corpus', value: formatCurrency(swpInputs.totalInvestment), sub: 'Starting Capital Pool', color: '#4f46e5' },
+                { label: 'Monthly Payout', value: formatCurrency(swpInputs.withdrawalAmount), sub: `${formatCurrency(swpInputs.withdrawalAmount * 12)} / Year`, color: '#e11d48' },
+                { label: 'Portfolio Return', value: `${swpInputs.expectedReturn}% p.a.`, sub: 'On Remaining Corpus', color: '#059669' },
+                { label: 'Drawdown Tenure', value: `${swpInputs.periodYears} Years`, sub: `${swpInputs.periodYears * 12} Monthly Withdrawals`, color: '#d97706' },
+                { label: 'Inflation Rate', value: isInflationEnabled ? `${swpInputs.inflationRate}% p.a.` : '0% (Nominal)', sub: isTaxEnabled ? `Tax: ${taxHoldingPeriod === 'long-term' ? 'LTCG 12.5%' : 'STCG 20%'}` : 'Real Balance Basis', color: '#0d9488' }
+              ].map((item, i) => (
+                <div key={i} style={{ backgroundColor: '#f8fafc', padding: '1rem', borderRadius: '0.875rem', border: '1px solid #e2e8f0' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.08em', color: '#64748b', margin: '0 0 0.35rem 0' }}>{item.label}</p>
+                  <p style={{ fontSize: '1.05rem', fontWeight: 900, color: item.color, margin: '0 0 0.2rem 0' }}>{item.value}</p>
+                  <p style={{ fontSize: '9px', fontWeight: 600, color: '#94a3b8', margin: 0 }}>{item.sub}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        <div style={{ marginBottom: '3rem', display: 'grid', gridTemplateColumns: 'repeat(12, minmax(0, 1fr))', gap: '2rem', alignItems: 'center' }}>
-           <div style={{ gridColumn: 'span 7 / span 7' }}>
-             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
-                <h3 style={{ fontSize: '0.75rem', lineHeight: '1rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.3em', color: '#94a3b8' }}>II. Wealth Forecast</h3>
-                <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#f1f5f9' }}></div>
-             </div>
-             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#eef2ff', borderRadius: '1rem', border: '1px solid #e0e7ff' }}>
-                   <p style={{ fontWeight: 700, color: '#475569' }}>
-                     {mode === 'Loan' ? 'Total Principal' : mode === 'SWP' ? 'Total Investment' : 'Projected Total Invested'}
-                   </p>
-                   <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#0f172a' }}>
-                     {formatCurrency(
-                       mode === 'Loan' ? loanInputs.loanAmount : 
-                       mode === 'SWP' ? swpInputs.totalInvestment : 
-                       (results as SIPResults).totalInvested
-                     )}
-                   </p>
+        {/* SECTION II: CATEGORY-SPECIFIC PRIMARY OUTCOME SUMMARY */}
+        <div style={{ marginBottom: '2.25rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#334155', margin: 0 }}>
+              II. {mode === 'SIP' ? 'SIP Wealth Accumulation Summary' : mode === 'Lumpsum' ? 'Lumpsum Compounding Summary' : mode === 'Loan' ? 'Loan EMI & Repayment Breakdown' : 'SWP Cashflow & Residual Corpus Summary'}
+            </h3>
+            <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#e2e8f0' }}></div>
+          </div>
+
+          {(mode === 'SIP' || mode === 'Lumpsum') && (() => {
+            const res = results as SIPResults;
+            const wealthMultiplier = (res.totalValue / Math.max(1, res.totalInvested)).toFixed(2);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#fffbeb', border: '1px solid #fde68a' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#b45309', margin: '0 0 0.35rem 0' }}>
+                    {mode === 'SIP' ? 'Total Capital Invested' : 'One-Time Principal Deployed'}
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#d97706', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.totalInvested)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#92400e', margin: 0 }}>
+                    {mode === 'SIP' ? `Cumulative ${sipInputs.frequency} contributions` : '100% upfront capital commitment'}
+                  </p>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#ecfdf5', borderRadius: '1rem', border: '1px solid #d1fae5' }}>
-                   <p style={{ fontWeight: 700, color: '#475569' }}>
-                     {mode === 'Loan' ? 'Total Interest' : mode === 'SWP' ? 'Total Withdrawn' : 'Estimated Portfolio Yield'}
-                   </p>
-                   <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#047857' }}>
-                     {formatCurrency(
-                       mode === 'Loan' ? (results as LoanResults).totalInterest : 
-                       mode === 'SWP' ? (results as SWPResults).totalWithdrawn : 
-                       (results as SIPResults).estimatedReturns
-                     )}
-                   </p>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#047857', margin: '0 0 0.35rem 0' }}>
+                    Estimated Wealth Gain (Pre-Tax)
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', margin: '0 0 0.25rem 0' }}>
+                    +{formatCurrency(res.estimatedReturns)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#065f46', margin: 0 }}>
+                    Wealth Multiplier: {wealthMultiplier}x of principal
+                  </p>
                 </div>
-                {(mode === 'SIP' || mode === 'Lumpsum' || mode === 'SWP') && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#f0fdfa', borderRadius: '1rem', border: '1px solid #ccfbf1' }}>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#1e1b4b', border: '1px solid #312e81', color: '#ffffff' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a5b4fc', margin: '0 0 0.35rem 0' }}>
+                    Terminal Portfolio Value (Nominal)
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.totalValue)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#c7d2fe', margin: 0 }}>
+                     Projected maturity corpus after {sipInputs.periodYears} yrs
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {mode === 'Loan' && (() => {
+            const res = results as LoanResults;
+            const principalPct = ((loanInputs.loanAmount / Math.max(1, res.totalPayment)) * 100).toFixed(1);
+            const interestPct = ((res.totalInterest / Math.max(1, res.totalPayment)) * 100).toFixed(1);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4338ca', margin: '0 0 0.35rem 0' }}>
+                    Monthly EMI Commitment
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#4f46e5', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.monthlyEMI)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#3730a3', margin: 0 }}>
+                    Annual Outflow: {formatCurrency(res.monthlyEMI * 12)} / yr
+                  </p>
+                </div>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#fff1f2', border: '1px solid #fecdd3' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#be123c', margin: '0 0 0.35rem 0' }}>
+                    Total Interest Payable
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#e11d48', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.totalInterest)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#9f1239', margin: 0 }}>
+                    {interestPct}% of total loan repayment
+                  </p>
+                </div>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#1e1b4b', border: '1px solid #312e81', color: '#ffffff' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a5b4fc', margin: '0 0 0.35rem 0' }}>
+                    Total Repayment Outflow
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.totalPayment)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#c7d2fe', margin: 0 }}>
+                    Principal ({principalPct}%) + Interest ({interestPct}%)
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+
+          {mode === 'SWP' && (() => {
+            const res = results as SWPResults;
+            const totalGenerated = Math.max(0, (res.totalWithdrawn + res.finalBalance) - swpInputs.totalInvestment);
+            return (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '1rem' }}>
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#ecfdf5', border: '1px solid #a7f3d0' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#047857', margin: '0 0 0.35rem 0' }}>
+                    Total Income Withdrawn
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#059669', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.totalWithdrawn)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#065f46', margin: 0 }}>
+                    {formatCurrency(swpInputs.withdrawalAmount)}/mo over {swpInputs.periodYears} yrs
+                  </p>
+                </div>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#4338ca', margin: '0 0 0.35rem 0' }}>
+                    Net Portfolio Yield Generated
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#4f46e5', margin: '0 0 0.25rem 0' }}>
+                    +{formatCurrency(totalGenerated)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#3730a3', margin: 0 }}>
+                    Total Withdrawn + Final Balance - Corpus
+                  </p>
+                </div>
+
+                <div style={{ padding: '1.25rem', borderRadius: '1rem', backgroundColor: '#1e1b4b', border: '1px solid #312e81', color: '#ffffff' }}>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#a5b4fc', margin: '0 0 0.35rem 0' }}>
+                    Final Corpus Balance (Nominal)
+                  </p>
+                  <p style={{ fontSize: '1.65rem', fontWeight: 900, color: '#ffffff', margin: '0 0 0.25rem 0' }}>
+                    {formatCurrency(res.finalBalance)}
+                  </p>
+                  <p style={{ fontSize: '11px', fontWeight: 600, color: '#c7d2fe', margin: 0 }}>
+                    {res.finalBalance > 0 ? 'Residual capital preserved at maturity' : 'Corpus fully utilized during tenure'}
+                  </p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* SECTION III: CONDITIONAL INFLATION & TAX INCLUSIVE ANALYSIS (WHEN CHOSEN BY USER) */}
+        {(isInflationEnabled || isTaxEnabled) && (
+          <div style={{ marginBottom: '2.25rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+              <h3 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#0f766e', margin: 0 }}>
+                III. {isInflationEnabled && isTaxEnabled
+                  ? 'Inflation-Adjusted & Tax-Inclusive Impact Analysis'
+                  : isInflationEnabled
+                    ? 'Inflation Purchasing Power Analysis'
+                    : 'Capital Gains Tax Impact Analysis (Union Budget 2024)'}
+              </h3>
+              <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#ccfbf1' }}></div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: isInflationEnabled && isTaxEnabled ? 'repeat(2, minmax(0, 1fr))' : 'repeat(1, minmax(0, 1fr))', gap: '1.25rem' }}>
+              {/* INFLATION CARD (Shown if user chose inflationRate > 0) */}
+              {isInflationEnabled && (() => {
+                const nominalVal = mode === 'SWP' ? (results as SWPResults).finalBalance : (results as SIPResults).totalValue;
+                const realVal = mode === 'SWP' ? (results as SWPResults).realFinalBalance : (results as SIPResults).realValue;
+                const erosion = Math.max(0, nominalVal - realVal);
+                return (
+                  <div style={{ padding: '1.35rem', borderRadius: '1rem', backgroundColor: '#f0fdfa', border: '1px solid #99f6e4' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem', paddingBottom: '0.65rem', borderBottom: '1px solid #ccfbf1' }}>
+                      <div>
+                        <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#0f766e', margin: 0 }}>
+                          Inflation Adjustment ({activeInflationRate}% p.a.)
+                        </p>
+                        <p style={{ fontSize: '11px', fontWeight: 600, color: '#115e59', margin: '0.15rem 0 0 0' }}>
+                          Purchasing power over {activeHorizonYears} years
+                        </p>
+                      </div>
+                      <span style={{ padding: '0.25rem 0.6rem', borderRadius: '0.375rem', backgroundColor: '#ccfbf1', color: '#0f766e', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
+                        Today's ₹ Value
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
+                      <div style={{ backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '0.65rem', border: '1px solid #ccfbf1' }}>
+                        <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', margin: '0 0 0.25rem 0' }}>Nominal Value</p>
+                        <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{formatCurrency(nominalVal)}</p>
+                      </div>
+                      <div style={{ backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '0.65rem', border: '1px solid #ccfbf1' }}>
+                        <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', margin: '0 0 0.25rem 0' }}>Inflation Erosion</p>
+                        <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#e11d48', margin: 0 }}>-{formatCurrency(erosion)}</p>
+                      </div>
+                      <div style={{ backgroundColor: '#0f766e', padding: '0.75rem', borderRadius: '0.65rem', color: '#ffffff' }}>
+                        <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#99f6e4', margin: '0 0 0.25rem 0' }}>Real Value (Today's ₹)</p>
+                        <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>{formatCurrency(realVal)}</p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* TAX INCLUSIVE CARD (Shown if user enabled Tax Impact toggle) */}
+              {isTaxEnabled && taxImpactInfo && (
+                <div style={{ padding: '1.35rem', borderRadius: '1rem', backgroundColor: '#fef2f2', border: '1px solid #fecaca' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.875rem', paddingBottom: '0.65rem', borderBottom: '1px solid #fee2e2' }}>
                     <div>
-                      <p style={{ fontWeight: 700, color: '#115e59', fontSize: '0.875rem' }}>Purchasing Power (Real Value)</p>
-                      <p style={{ fontSize: '10px', color: '#0d9488' }}>
-                        In today's ₹ at {mode === 'SWP' ? swpInputs.inflationRate : sipInputs.inflationRate}% annual inflation
+                      <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#b91c1c', margin: 0 }}>
+                        Tax Inclusive Calculation ({taxHoldingPeriod === 'long-term' ? 'LTCG > 1 Yr @ 12.5%' : 'STCG ≤ 1 Yr @ 20%'})
+                      </p>
+                      <p style={{ fontSize: '11px', fontWeight: 600, color: '#7f1d1d', margin: '0.15rem 0 0 0' }}>
+                        {taxHoldingPeriod === 'long-term' ? 'Sec 112A: ₹1.25L annual exemption applied' : 'Sec 111A: Flat 20% on short-term gains'}
                       </p>
                     </div>
-                    <p style={{ fontSize: '1.5rem', lineHeight: '2rem', fontWeight: 900, color: '#0f766e' }}>
-                      {formatCurrency(
-                        mode === 'SWP' 
-                          ? (results as SWPResults).realFinalBalance 
-                          : (results as SIPResults).realValue
+                    <span style={{ padding: '0.25rem 0.6rem', borderRadius: '0.375rem', backgroundColor: '#fee2e2', color: '#991b1b', fontSize: '9px', fontWeight: 900, textTransform: 'uppercase' }}>
+                      Eff. Rate: {taxImpactInfo.effectiveTaxRate}%
+                    </span>
+                  </div>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: '0.75rem' }}>
+                    <div style={{ backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '0.65rem', border: '1px solid #fee2e2' }}>
+                      <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', margin: '0 0 0.25rem 0' }}>Taxable Gains</p>
+                      <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#0f172a', margin: 0 }}>{formatCurrency(taxImpactInfo.taxableGains)}</p>
+                    </div>
+                    <div style={{ backgroundColor: '#ffffff', padding: '0.75rem', borderRadius: '0.65rem', border: '1px solid #fee2e2' }}>
+                      <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#64748b', margin: '0 0 0.25rem 0' }}>Est. Tax Liability</p>
+                      <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#dc2626', margin: 0 }}>-{formatCurrency(taxImpactInfo.taxAmount)}</p>
+                    </div>
+                    <div style={{ backgroundColor: '#991b1b', padding: '0.75rem', borderRadius: '0.65rem', color: '#ffffff' }}>
+                      <p style={{ fontSize: '8.5px', fontWeight: 800, textTransform: 'uppercase', color: '#fecaca', margin: '0 0 0.25rem 0' }}>Net In-Hand Wealth</p>
+                      <p style={{ fontSize: '0.95rem', fontWeight: 900, color: '#ffffff', margin: 0 }}>{formatCurrency(taxImpactInfo.netTotalValue)}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* COMBINED BANNER WHEN BOTH INFLATION AND TAX ARE CHOSEN */}
+            {isInflationEnabled && isTaxEnabled && taxImpactInfo && postTaxRealWealth !== null && (
+              <div style={{ marginTop: '1rem', padding: '1rem 1.35rem', borderRadius: '0.875rem', backgroundColor: '#f8fafc', border: '1px solid #cbd5e1', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div>
+                  <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#334155', margin: '0 0 0.2rem 0' }}>
+                    Net Real Post-Tax Purchasing Power (Inflation + Tax Adjusted)
+                  </p>
+                  <p style={{ fontSize: '11px', color: '#64748b', fontWeight: 600, margin: 0 }}>
+                    Net in-hand corpus of {formatCurrency(taxImpactInfo.netTotalValue)} after {formatCurrency(taxImpactInfo.taxAmount)} tax, discounted for {activeInflationRate}% p.a. inflation over {activeHorizonYears} years.
+                  </p>
+                </div>
+                <div style={{ textAlign: 'right' }}>
+                  <p style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', color: '#0f766e', margin: '0 0 0.15rem 0' }}>True Purchasing Power</p>
+                  <p style={{ fontSize: '1.4rem', fontWeight: 900, color: '#0f766e', margin: 0 }}>{formatCurrency(postTaxRealWealth)}</p>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* SECTION IV: CATEGORY-SPECIFIC YEAR-BY-YEAR SCHEDULE TABLE */}
+        <div style={{ marginBottom: aiInsight ? '2rem' : '1.5rem' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '0.75rem', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.2em', color: '#334155', margin: 0 }}>
+              {isInflationEnabled || isTaxEnabled ? 'IV.' : 'III.'} {mode === 'Loan' ? 'Loan Amortization Milestone Schedule' : mode === 'SWP' ? 'SWP Annual Cashflow & Balance Schedule' : `${mode} Annual Wealth Progression Schedule`}
+            </h3>
+            <div style={{ flex: '1 1 0%', height: '1px', backgroundColor: '#e2e8f0' }}></div>
+          </div>
+
+          <div style={{ backgroundColor: '#f8fafc', padding: '1.25rem 1.5rem', borderRadius: '1rem', border: '1px solid #e2e8f0' }}>
+            <table style={{ width: '100%', fontSize: '0.8rem', borderCollapse: 'collapse' }}>
+              <thead>
+                <tr style={{ textAlign: 'left', color: '#475569', borderBottom: '2px solid #cbd5e1' }}>
+                  <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', letterSpacing: '0.06em' }}>Year</th>
+                  {mode === 'SIP' || mode === 'Lumpsum' ? (
+                    <>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        {mode === 'SIP' ? 'Cumulative Invested' : 'Principal Invested'}
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Est. Gain
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Nominal Wealth
+                      </th>
+                      {isInflationEnabled && (
+                        <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', color: '#0f766e', letterSpacing: '0.06em' }}>
+                          Real Value ({activeInflationRate}% Infl.)
+                        </th>
                       )}
-                    </p>
-                  </div>
-                )}
-                {showTaxImpact && taxImpactInfo && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.25rem', backgroundColor: '#fef2f2', borderRadius: '1rem', border: '1px solid #fee2e2' }}>
-                    <div>
-                      <p style={{ fontWeight: 700, color: '#991b1b', fontSize: '0.875rem' }}>
-                        Est. Capital Gains Tax ({taxHoldingPeriod === 'long-term' ? 'LTCG @ 12.5%' : 'STCG @ 20%'})
-                      </p>
-                      <p style={{ fontSize: '10px', color: '#b91c1c' }}>
-                        {taxImpactInfo.taxRuleDescription}
-                      </p>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <p style={{ fontSize: '1.25rem', lineHeight: '1.75rem', fontWeight: 900, color: '#dc2626' }}>
-                        - {formatCurrency(taxImpactInfo.taxAmount)}
-                      </p>
-                      <p style={{ fontSize: '10px', color: '#047857', fontWeight: 700 }}>
-                        Net In-Hand: {formatCurrency(taxImpactInfo.netTotalValue)}
-                      </p>
-                    </div>
-                  </div>
-                )}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.75rem', backgroundColor: '#1e1b4b', borderRadius: '1.5rem', color: '#ffffff' }}>
-                   <div>
-                      <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.6, marginBottom: '0.25rem' }}>
-                        {mode === 'Loan' ? 'Total Repayment' : mode === 'SWP' ? 'Final Balance (Nominal)' : 'Terminal Portfolio Value (Nominal)'}
-                      </p>
-                      <p style={{ fontSize: '1.875rem', lineHeight: '2.25rem', fontWeight: 900 }}>
-                        {formatCurrency(
-                          mode === 'Loan' ? (results as LoanResults).totalPayment : 
-                          mode === 'SWP' ? (results as SWPResults).finalBalance : 
-                          (results as SIPResults).totalValue
-                        )}
-                      </p>
-                   </div>
-                   <div style={{ width: '3.5rem', height: '3.5rem', borderRadius: '9999px', display: 'flex', alignItems: 'center', justifyContent: 'center', backgroundColor: 'rgba(255, 255, 255, 0.2)' }}>
-                       <TrendingUp className="h-7 w-7" strokeWidth={3} />
-                   </div>
-                </div>
-             </div>
-           </div>
-           
-           <div style={{ gridColumn: 'span 5 / span 5', backgroundColor: '#f8fafc', padding: '2rem', borderRadius: '1.5rem', border: '1px solid #f1f5f9', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-              <h4 style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', color: '#94a3b8', marginBottom: '1.5rem', textAlign: 'center' }}>Growth Milestones</h4>
-              <table style={{ width: '100%', fontSize: '0.875rem', lineHeight: '1.25rem' }}>
-                <thead>
-                  <tr style={{ textAlign: 'left', color: '#94a3b8', borderBottom: '1px solid #e2e8f0' }}>
-                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px' }}>Year</th>
-                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px', textAlign: 'right' }}>
-                      {mode === 'Loan' ? 'Principal Paid' : mode === 'SWP' ? 'Withdrawn' : 'Principal'}
-                    </th>
-                    <th style={{ paddingBottom: '0.75rem', fontWeight: 700, textTransform: 'uppercase', fontSize: '9px', textAlign: 'right' }}>
-                      {mode === 'Loan' ? 'Balance' : mode === 'SWP' ? 'Balance' : 'Total Wealth'}
-                    </th>
-                  </tr>
-                </thead>
-                <tbody style={{ borderCollapse: 'collapse' }}>
-                  {milestones.map((m, idx) => {
-                    const val1 = mode === 'Loan' ? m.principalPaid : mode === 'SWP' ? m.withdrawn : m.invested;
-                    const val2 = mode === 'Loan' ? m.remainingBalance : mode === 'SWP' ? m.balance : m.totalValue;
-                    
+                      {isTaxEnabled && (
+                        <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', color: '#b91c1c', letterSpacing: '0.06em' }}>
+                          Post-Tax Wealth
+                        </th>
+                      )}
+                    </>
+                  ) : mode === 'Loan' ? (
+                    <>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Cumulative Principal Paid
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Cumulative Interest Paid
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Outstanding Balance
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', color: '#4f46e5', letterSpacing: '0.06em' }}>
+                        Repaid %
+                      </th>
+                    </>
+                  ) : (
+                    <>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Initial Corpus
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Cumulative Withdrawn
+                      </th>
+                      <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', letterSpacing: '0.06em' }}>
+                        Nominal Balance
+                      </th>
+                      {isInflationEnabled && (
+                        <th style={{ paddingBottom: '0.65rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '9.5px', textAlign: 'right', color: '#0f766e', letterSpacing: '0.06em' }}>
+                          Real Balance (Today's ₹)
+                        </th>
+                      )}
+                    </>
+                  )}
+                </tr>
+              </thead>
+              <tbody>
+                {milestones.map((m, idx) => {
+                  if (mode === 'SIP' || mode === 'Lumpsum') {
+                    const gain = Math.max(0, (m.totalValue ?? 0) - (m.invested ?? 0));
+                    const yrTax = isTaxEnabled
+                      ? calculateCapitalGainsTax(gain, m.invested ?? 0, taxHoldingPeriod)
+                      : null;
                     return (
-                      <tr key={idx} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', fontWeight: 900, color: '#4f46e5' }}>{m.year}</td>
-                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', textAlign: 'right', color: '#64748b', fontWeight: 500 }}>
-                          ₹{(val1 ?? 0).toLocaleString('en-IN')}
+                      <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '0.6rem 0', fontWeight: 900, color: pdfCategoryMeta.accentColor }}>Year {m.year}</td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#475569', fontWeight: 600 }}>
+                          {formatCurrency(m.invested ?? 0)}
                         </td>
-                        <td style={{ paddingTop: '0.75rem', paddingBottom: '0.75rem', textAlign: 'right', fontWeight: 700, color: '#0f172a' }}>
-                          ₹{(val2 ?? 0).toLocaleString('en-IN')}
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#059669', fontWeight: 700 }}>
+                          +{formatCurrency(gain)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                          {formatCurrency(m.totalValue ?? 0)}
+                        </td>
+                        {isInflationEnabled && (
+                          <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#0f766e' }}>
+                            {formatCurrency(m.realValue ?? 0)}
+                          </td>
+                        )}
+                        {isTaxEnabled && yrTax && (
+                          <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#b91c1c' }}>
+                            {formatCurrency(yrTax.netTotalValue)}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  } else if (mode === 'Loan') {
+                    const repaidPct = (((m.principalPaid ?? 0) / Math.max(1, loanInputs.loanAmount)) * 100).toFixed(1);
+                    return (
+                      <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '0.6rem 0', fontWeight: 900, color: pdfCategoryMeta.accentColor }}>Year {m.year}</td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#059669', fontWeight: 700 }}>
+                          {formatCurrency(m.principalPaid ?? 0)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#e11d48', fontWeight: 700 }}>
+                          {formatCurrency(m.interestPaid ?? 0)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                          {formatCurrency(m.remainingBalance ?? 0)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#4f46e5' }}>
+                          {repaidPct}%
                         </td>
                       </tr>
                     );
-                  })}
-                </tbody>
-              </table>
-           </div>
+                  } else {
+                    return (
+                      <tr key={idx} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                        <td style={{ padding: '0.6rem 0', fontWeight: 900, color: pdfCategoryMeta.accentColor }}>Year {m.year}</td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#475569', fontWeight: 600 }}>
+                          {formatCurrency(swpInputs.totalInvestment)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', color: '#059669', fontWeight: 700 }}>
+                          {formatCurrency(m.withdrawn ?? 0)}
+                        </td>
+                        <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#0f172a' }}>
+                          {formatCurrency(m.balance ?? 0)}
+                        </td>
+                        {isInflationEnabled && (
+                          <td style={{ padding: '0.6rem 0', textAlign: 'right', fontWeight: 800, color: '#0f766e' }}>
+                            {formatCurrency(m.realBalance ?? 0)}
+                          </td>
+                        )}
+                      </tr>
+                    );
+                  }
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
 
-        <div style={{ marginTop: 'auto', paddingTop: '3rem', borderTop: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', opacity: 0.4 }}>
-           <div style={{ maxWidth: '28rem' }}>
-              <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', lineHeight: '1.625' }}>
-                Legal Disclaimer: This projection is generated using mathematical estimates. Past performance is not indicative of future returns. Bharat Wealth acts as a strategic simulation tool and does not provide regulated financial advice. Portfolio results are subject to market volatility.
-              </p>
-           </div>
-           <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'end' }}>
-              <div style={{ marginBottom: '0.5rem' }}>
-                 <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: '0.25rem', color: '#000000' }}>Authenticated By</p>
-                 <div style={{ width: '6rem', height: '2rem', backgroundColor: '#f1f5f9', borderRadius: '0.25rem', display: 'flex', alignItems: 'center', justify: 'center', border: '2px solid #e2e8f0', gap: '0.25rem' }}>
-                    <CheckCircle2 style={{ height: '0.75rem', width: '0.75rem', color: '#94a3b8' }} strokeWidth={3} />
-                    <span style={{ fontSize: '9px', fontWeight: 900, color: '#94a3b8' }}>VERIFIED</span>
-                 </div>
+        {/* OPTIONAL AI STRATEGIC INSIGHT IN PDF IF GENERATED */}
+        {aiInsight && (
+          <div style={{ marginBottom: '1.75rem', padding: '1.25rem 1.5rem', borderRadius: '1rem', backgroundColor: '#eef2ff', border: '1px solid #c7d2fe' }}>
+            <p style={{ fontSize: '10px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#4338ca', margin: '0 0 0.5rem 0' }}>
+              AI Strategic Advisory Note
+            </p>
+            <p style={{ fontSize: '0.8rem', lineHeight: '1.5', color: '#1e293b', fontWeight: 500, margin: '0 0 0.75rem 0' }}>
+              {aiInsight.analysis}
+            </p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, minmax(0, 1fr))', gap: '0.75rem' }}>
+              <div style={{ padding: '0.75rem', borderRadius: '0.65rem', backgroundColor: '#ffffff', border: '1px solid #a7f3d0' }}>
+                <p style={{ fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', color: '#059669', margin: '0 0 0.2rem 0' }}>Pro Strategy</p>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{aiInsight.proTip}</p>
               </div>
-           </div>
+              <div style={{ padding: '0.75rem', borderRadius: '0.65rem', backgroundColor: '#ffffff', border: '1px solid #fde68a' }}>
+                <p style={{ fontSize: '8.5px', fontWeight: 900, textTransform: 'uppercase', color: '#d97706', margin: '0 0 0.2rem 0' }}>Key Risk Factor</p>
+                <p style={{ fontSize: '0.75rem', fontWeight: 700, color: '#0f172a', margin: 0 }}>{aiInsight.warning}</p>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* REPORT FOOTER */}
+        <div style={{ marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid #e2e8f0', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+          <div style={{ maxWidth: '520px' }}>
+            <p style={{ fontSize: '8px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', lineHeight: '1.6', color: '#64748b', margin: 0 }}>
+              Regulatory & Tax Disclaimer: This {mode} report is generated using standardized financial formulas. {isTaxEnabled ? 'Capital gains tax projections are indicative estimates based on Indian Union Budget 2024 equity taxation rules (Sec 112A / 111A) excluding surcharge/cess. ' : ''}Past performance does not guarantee future returns. Consult a SEBI-registered investment advisor or Chartered Accountant before making financial decisions.
+            </p>
+          </div>
+          <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end' }}>
+            <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 0.25rem 0', color: '#475569' }}>Authenticated Report</p>
+            <div style={{ padding: '0.35rem 0.75rem', backgroundColor: '#f1f5f9', borderRadius: '0.375rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cbd5e1', gap: '0.35rem' }}>
+              <CheckCircle2 style={{ height: '0.75rem', width: '0.75rem', color: '#059669' }} strokeWidth={3} />
+              <span style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', letterSpacing: '0.08em' }}>BHARAT WEALTH VERIFIED</span>
+            </div>
+          </div>
         </div>
       </div>
     </div>

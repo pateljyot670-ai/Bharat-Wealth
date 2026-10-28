@@ -183,7 +183,7 @@ export const chatWithAI = async (message: string, context: { mode: CalculationMo
 
     Answer the user's questions about this plan or general financial topics (SIP, Lumpsum, Loan EMI, SWP, Mutual Funds, Inflation, Taxation in India).
     Keep responses concise, helpful, and easy to understand. Use emojis where appropriate.
-    Always clarify that you provide information, not certified financial advice.
+    Always clarify that you provide information, not certified financial advice. If the user asks how to get in touch, contact support, or reach out for more info, direct them to click the WhatsApp icon button on the screen.
   `;
 
   try {

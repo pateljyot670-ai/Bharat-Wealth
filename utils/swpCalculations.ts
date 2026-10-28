@@ -40,6 +40,7 @@ export const calculateSWP = (inputs: SWPInputs): SWPResults => {
   const realFinalBalance = Math.round(currentBalance / Math.pow(1 + annualInflation, periodYears));
 
   return {
+    totalInvestment,
     totalWithdrawn: Math.round(totalWithdrawn),
     finalBalance,
     realFinalBalance,

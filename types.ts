@@ -34,6 +34,7 @@ export interface CapitalGainsTaxResult {
 }
 
 export interface SWPResults {
+  totalInvestment?: number;
   totalWithdrawn: number;
   finalBalance: number;
   realFinalBalance: number;
