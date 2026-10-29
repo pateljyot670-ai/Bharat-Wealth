@@ -661,7 +661,6 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
                 </div>
                 <div>
                   <h2 style={{ fontSize: '1.5rem', lineHeight: '1.75rem', fontWeight: 900, letterSpacing: '-0.04em', textTransform: 'uppercase', color: '#1e1b4b', margin: 0 }}>Bharat Wealth</h2>
-                  <p style={{ fontSize: '10px', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#64748b', margin: 0 }}>Institutional Financial Analytics</p>
                 </div>
               </div>
 
@@ -1229,7 +1228,7 @@ Namaste! I just formulated my systematic withdrawal retirement income plan! 🏖
             <p style={{ fontSize: '8px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 0.25rem 0', color: '#475569' }}>Authenticated Report</p>
             <div style={{ padding: '0.35rem 0.75rem', backgroundColor: '#f1f5f9', borderRadius: '0.375rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', border: '1px solid #cbd5e1', gap: '0.35rem' }}>
               <CheckCircle2 style={{ height: '0.75rem', width: '0.75rem', color: '#059669' }} strokeWidth={3} />
-              <span style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', letterSpacing: '0.08em' }}>BHARAT WEALTH VERIFIED</span>
+              <span style={{ fontSize: '9px', fontWeight: 900, color: '#0f172a', letterSpacing: '0.08em' }}>SYSTEM VERIFIED</span>
             </div>
           </div>
         </div>
